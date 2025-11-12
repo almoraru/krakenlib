@@ -1,0 +1,36 @@
+# Compiled Object files
+*.o
+*.obj
+objs/
+
+# Libraries
+*.a
+*.so
+*.dylib
+
+# Executables
+test_runner
+a.out
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Backup files
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+test_gnl.txt
