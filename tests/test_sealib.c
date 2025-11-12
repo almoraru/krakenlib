@@ -18,7 +18,7 @@
 /*      Filename: test.c                                                      */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/08/27 22:40:24 by espadara                              */
-/*      Updated: 2025/10/27 08:56:36 by espadara                              */
+/*      Updated: 2025/11/13 00:20:19 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -704,7 +704,7 @@ puts("\n---STRCMP---");
   puts("\n---ARENA ALLOCATOR---");
   {
     t_mem *arena = NULL;
-    void *p1, *p2, *p3;
+    void *p1, *p2;
 
     // --- Initialization Tests ---
     printf("\n## Initialization\n");
@@ -1715,7 +1715,7 @@ puts("\n---LSTITER---");
         sea_lstadd_back(&expected_lst1, sea_lstnew(sea_strdup("TWO")));
 
         PRINT_TEST("Multi-node list mapping", new_lst1 != NULL && compare_lists(new_lst1, expected_lst1));
-        printf("  Test: %-50s -> %s\n", "Original list is unchanged", (strcmp(orig_lst1->content, "one") == 0) ? "OK" : orig_lst1->content);
+        printf("  Test: %-50s -> %s\n", "Original list is unchanged", (strcmp(orig_lst1->content, "one") == 0) ? "OK" : (char*)orig_lst1->content);
 
         sea_lstclear(&orig_lst1, free);
         sea_lstclear(&new_lst1, free);

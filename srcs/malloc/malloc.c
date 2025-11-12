@@ -18,7 +18,7 @@
 /*      Filename: malloc.c                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:36:00 by espadara                              */
-/*      Updated: 2025/11/11 23:01:28 by espadara                              */
+/*      Updated: 2025/11/13 00:15:47 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,16 +30,28 @@ pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 static inline void *block_create(t_block **free, t_block **alloc,
                                  const size_t size)
 {
-  t_block *block;
+t_block *new_block;
+    t_block *next_free;
 
-  block = *free;
-  if ((*free = block->next))
-    (*free)->prev = NULL;
-  if ((block->next = *alloc))
-    (*alloc)->prev = block;
-  (*alloc) = block;
-  block->size = size;
-  return (block + 1);
+    if (!free || !alloc || !*free)
+      return NULL;
+
+    new_block = *free;
+    next_free = new_block->next;
+
+    *free = next_free;
+    if (*free)
+      (*free)->prev = NULL;
+
+    new_block->next = *alloc;
+    new_block->prev = NULL;
+    new_block->size = size;
+
+    if (*alloc)
+      (*alloc)->prev = new_block;
+    *alloc = new_block;
+
+    return ((void *)new_block + sizeof(t_block));
 }
 
 static inline void mem_init_zone(t_page **page,

@@ -15,7 +15,7 @@
 /*       > _.="                            "=._ <                             */
 /*      (_/                                    \_)                            */
 /*      Created: 2025/11/02 14:14:49 by espadara                              */
-/*      Updated: 2025/11/11 17:12:33 by espadara                              */
+/*      Updated: 2025/11/13 00:21:43 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,7 +171,12 @@ void	run_all_tests(void)
 	TEST_PRINTF_NO_ARGS("A simple percent: %%\n");
 
 	// --- Edge Cases ---
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-overflow"
 	TEST_PRINTF("Null string: %s\n", null_str);
+#pragma GCC diagnostic pop
+
 	TEST_PRINTF("Pointer NULL: %p\n", null_str);
 	TEST_PRINTF("Int Min: %d\n", INT_MIN);
 	TEST_PRINTF("Int Max: %d\n", INT_MAX);

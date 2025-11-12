@@ -18,7 +18,7 @@
 /*      Filename: arena_test.c                                                */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/08 17:01:49 by espadara                              */
-/*      Updated: 2025/11/08 17:02:18 by espadara                              */
+/*      Updated: 2025/11/13 00:20:40 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -215,6 +215,7 @@ void test_zero_byte_allocation() {
     printf("  Subsequent allocation OK.\n");
 
     sea_arena_free(arena);
+    (void)p;
     printf("  Arena freed.\n\n");
 }
 

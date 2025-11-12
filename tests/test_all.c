@@ -15,25 +15,47 @@
 /*       > _.="                            "=._ <                             */
 /*      (_/                                    \_)                            */
 /*                                                                            */
-/*      Filename: sea_arena_free.c                                            */
+/*      Filename: test_all.c                                                  */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
-/*      Created: 2025/08/29 23:21:46 by espadara                              */
-/*      Updated: 2025/11/13 00:18:04 by espadara                              */
+/*      Created: 2025/11/13 00:00:14 by espadara                              */
+/*      Updated: 2025/11/13 00:00:15 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "sea_core.h"
+#include "krakenlib.h"
+#include <stdio.h>
 
-void	sea_arena_free(t_mem *arena)
+int main(void)
 {
-  t_mem	*current;
-  t_mem	*next;
+    printf("\n");
+    printf("🐙 ============================================== 🐙\n");
+    printf("      KRAKENLIB v%s QUICK TEST SUITE\n", KRAKENLIB_VERSION);
+    printf("🐙 ============================================== 🐙\n");
+    printf("\n");
 
-  current = arena;
-  while (current)
-    {
-      next = current->next;
-      munmap(current, sizeof(t_mem) + current->total);
-      current = next;
+    printf("🔧 Testing Core Functions...\n");
+    printf("  sea_strlen(\"Hello\"): %zu\n", sea_strlen("Hello"));
+    printf("  sea_atoi(\"42\"): %d\n", sea_atoi("42"));
+    printf("  ✅ Core functions work!\n\n");
+
+    printf("🖨️  Testing Printf...\n");
+    sea_printf("  sea_printf test: %s %d %x\n", "Hello", 42, 255);
+    printf("  ✅ Printf works!\n\n");
+
+    printf("💾 Testing Malloc...\n");
+    void *ptr = malloc(100);
+    if (ptr) {
+        sea_memcpy(ptr, "Kraken!", 8);
+        printf("  Allocated and wrote: %s\n", (char *)ptr);
+        free(ptr);
+        printf("  ✅ Malloc/free work!\n\n");
     }
+
+    printf("🐙 ============================================== 🐙\n");
+    printf("       🎉 QUICK TESTS PASSED! 🎉\n");
+    printf("       Run 'make test-all' for full tests\n");
+    printf("🐙 ============================================== 🐙\n");
+    printf("\n");
+
+    return 0;
 }

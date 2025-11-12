@@ -18,7 +18,7 @@
 /*      Filename: sealib.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/08/23 15:35:18 by espadara                              */
-/*      Updated: 2025/10/27 00:03:20 by espadara                              */
+/*      Updated: 2025/11/13 00:18:34 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@
 # include <immintrin.h>
 # include <limits.h>
 # include <fcntl.h>
+# include <sys/mman.h>
 
 
 /* DEFINES  */
