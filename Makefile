@@ -18,7 +18,7 @@
 #      Filename: Makefile                                                      #
 #      By: espadara <espadara@pirate.capn.gg>                                  #
 #      Created: 2025/11/12 23:58:25 by espadara                                #
-#      Updated: 2025/11/12 23:58:39 by espadara                                #
+#      Updated: 2025/11/13 22:37:35 by espadara                                #
 #                                                                              #
 # ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; #
 
@@ -82,6 +82,7 @@ TEST_PRINTF = $(TEST_DIR)test_printf.c
 TEST_GNL = $(TEST_DIR)test_gnl.c
 TEST_MALLOC = $(TEST_DIR)test_malloc.c
 TEST_ALL = $(TEST_DIR)test_all.c
+BENCHMARK_SRC = $(TEST_DIR)benchmark.c
 
 # Test executables
 TEST_SEALIB_BIN = test_sealib
@@ -90,6 +91,7 @@ TEST_PRINTF_BIN = test_printf
 TEST_GNL_BIN = test_gnl
 TEST_MALLOC_BIN = test_malloc
 TEST_ALL_BIN = test_runner
+BENCHMARK_BIN = benchmark
 
 # ============================================================================ #
 #                                   RULES                                      #
@@ -204,6 +206,18 @@ test-malloc: all
 	@echo -e "$(GREEN)✅ Malloc module tests passed!$(NC)"
 	@echo ""
 
+
+benchmark: all
+	@echo -e "$(BLUE)⚡ Building Benchmark Suite...$(NC)"
+	@$(CC) $(FLAGS) -O3 $(INC) $(BENCHMARK_SRC) $(NAME) -lbsd -lm -o $(BENCHMARK_BIN)
+	@echo -e "$(GREEN)✅ Benchmark built!$(NC)"
+	@echo -e "$(YELLOW)Run with: ./$(BENCHMARK_BIN)$(NC)"
+	@echo ""
+
+run-benchmark: benchmark
+	@echo -e "$(BLUE)⚡ Running Benchmarks...$(NC)"
+	@./$(BENCHMARK_BIN)
+
 # Help target
 help:
 	@echo -e "$(CYAN)🐙 KRAKENLIB MAKEFILE HELP 🐙$(NC)"
@@ -226,4 +240,4 @@ help:
 	@echo -e ""
 	@echo -e "$(CYAN)⚓ Release the Kraken! ⚓$(NC)"
 
-.PHONY: all clean fclean re test test-all test-sealib test-arena test-printf test-gnl test-malloc shared banner help
+.PHONY: all clean fclean re test test-all test-sealib test-arena test-printf test-gnl test-malloc shared banner help benchmark run-benchmark
