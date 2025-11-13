@@ -21,7 +21,6 @@
 **A powerful, production-ready C library featuring custom implementations of libc functions, malloc, printf, and more!**
 
 [![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](https://en.wikipedia.org/wiki/C_(programming_language))
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 ---
 
