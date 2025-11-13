@@ -18,7 +18,7 @@
 /*      Filename: malloc.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:35:26 by espadara                              */
-/*      Updated: 2025/11/11 22:35:26 by espadara                              */
+/*      Updated: 2025/11/13 08:02:45 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,10 +51,10 @@ extern pthread_mutex_t  g_malloc_mutex;
 ** ---------- SIZE THESHOLDS ----------
 */
 
-#define ZONE_TINY       (1 << 10)
-#define ZONE_SMALL      (1 << 6)
+#define ZONE_TINY       (1 << 6)
+#define ZONE_SMALL      (1 << 10)
 #define MALLOC_ZONE     (1 << 7)
-#define MASK_0XFFF      (1 << 12) - 1
+#define MASK_0XFFF      ((1 << 12) - 1)
 #define HEXA_LIMIT 0x10
 #define TRUE 1
 #define FALSE 0

@@ -18,7 +18,7 @@
 /*      Filename: malloc.c                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:36:00 by espadara                              */
-/*      Updated: 2025/11/13 00:15:47 by espadara                              */
+/*      Updated: 2025/11/13 07:58:29 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,9 +40,14 @@ t_block *new_block;
     next_free = new_block->next;
 
     *free = next_free;
-    if (*free)
-      (*free)->prev = NULL;
-
+    if (*free) {
+        // DEBUG: Check if next_free points to valid memory
+        if ((void *)*free < (void *)0x1000) {  // Likely invalid
+            write(2, "ERROR: Invalid free block pointer\n", 35);
+            return NULL;
+        }
+        (*free)->prev = NULL;
+    }
     new_block->next = *alloc;
     new_block->prev = NULL;
     new_block->size = size;

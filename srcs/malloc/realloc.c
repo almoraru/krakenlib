@@ -18,7 +18,7 @@
 /*      Filename: realloc.c                                                   */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:39:32 by espadara                              */
-/*      Updated: 2025/11/11 22:40:09 by espadara                              */
+/*      Updated: 2025/11/13 08:11:35 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,26 +51,40 @@ void *realloc(void *ptr, size_t size)
   void *new;
   t_block *block_header;
 
-  if (!ptr || !size)
+  if (!ptr)
     return (malloc(size));
+  if (!size)
+  {
+    free(ptr);
+    return (NULL);
+  }
+
   pthread_mutex_lock(&g_malloc_mutex);
-  if (!check_block(ptr, size))
+
+  if (!check_block(ptr, ZONE_SMALL + 1))
   {
     pthread_mutex_unlock(&g_malloc_mutex);
     return (NULL);
   }
+
   block_header = ptr - sizeof(t_block);
+
   if (size <= block_header->size)
   {
-    block_header->size = size;
+    block_header->size = align_mem(size, 31);
     pthread_mutex_unlock(&g_malloc_mutex);
     return (ptr);
   }
+
   pthread_mutex_unlock(&g_malloc_mutex);
-  if (!(new = malloc(size)))
+
+  new = malloc(size);
+  if (!new)
     return (NULL);
-  sea_memcpy(new, ptr, block_header->size);
+
+  sea_memcpy_fast(new, ptr, block_header->size);
   free(ptr);
+
   return (new);
 }
 
