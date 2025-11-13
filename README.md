@@ -336,16 +336,53 @@ make test
 
 ### Benchmark Results
 
-| Operation | Standard libc | Krakenlib | Difference |
-|-----------|--------------|-----------|------------|
-| malloc (small) | 15 ns | 18 ns | +20% |
-| malloc (large) | 250 ns | 260 ns | +4% |
-| free | 12 ns | 14 ns | +16% |
-| sea_strlen | 8 ns | 8 ns | 0% |
-| sea_memcpy | 10 ns | 11 ns | +10% |
-| sea_printf | 850 ns | 900 ns | +6% |
+Tested on **AMD Ryzen 9 7950X3D @ 4.2GHz** (3D V-Cache)  
+Compiler: GCC with -O2 optimization  
+Iterations: 1,000,000 per test
 
-*Benchmarks run on Intel i7-9700K @ 3.6GHz*
+#### String Operations
+
+| Operation | Krakenlib (ns) | glibc (ns) | Cycles (Kraken) | Cycles (glibc) | Difference |
+|-----------|----------------|------------|-----------------|----------------|------------|
+| `sea_strlen` | 3.08 | 2.22 | 13 | 9 | +38.8% |
+| `sea_strcmp` | 13.13 | 2.17 | 55 | 9 | +506.1% |
+| `sea_memcpy_fast(1KB)` | 14.40 | 6.92 | 60 | 29 | +108.0% |
+
+#### Memory Allocation
+
+| Operation | Krakenlib (ns) | glibc (ns) | Cycles (Kraken) | Cycles (glibc) | Difference |
+|-----------|----------------|------------|-----------------|----------------|------------|
+| `malloc(16)` | 674.59 | 7.69 | 2833 | 32 | +8670% |
+| `malloc(512)` | 1012.83 | 128.73 | 4254 | 541 | +687% |
+| `malloc(4096)` | 4677.41 | 783.99 | 19644 | 3293 | +497% |
+
+#### Formatted Output
+
+| Operation | Krakenlib (ns) | glibc (ns) | Cycles (Kraken) | Cycles (glibc) | Difference |
+|-----------|----------------|------------|-----------------|----------------|------------|
+| `sea_printf` | 483.80 | 423.69 | 2032 | 1779 | +14.2% |
+
+### Performance Notes
+
+**String Operations:**
+- `strlen`: Competitive performance, only 38% slower than highly-optimized glibc
+- `strcmp`: Uses simple byte-by-byte comparison; glibc uses SIMD for long strings
+- `memcpy`: Good performance at ~2x slower; glibc uses SSE/AVX instructions
+
+**Memory Allocation:**
+- glibc's malloc (ptmalloc2) has **decades of optimization** including:
+  - Thread-local caches (tcache) - no mutex overhead
+  - CPU-optimized arena design
+  - Assembly-optimized fast paths
+  - Predictive prefetching
+- Krakenlib's allocator prioritizes **simplicity and educational value** while maintaining reasonable performance
+- Small allocations (16 bytes) show the biggest gap due to glibc's fastbin optimization
+- Larger allocations (4KB+) are more competitive at ~6x slower
+
+**Printf:**
+- Krakenlib's printf is only **14% slower** than glibc - excellent result!
+- Both implementations use similar buffering strategies
+- Minimal overhead for formatted output
 
 ---
 
