@@ -18,7 +18,7 @@
 /*      Filename: test.c                                                      */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:41:16 by espadara                              */
-/*      Updated: 2025/11/13 08:09:26 by espadara                              */
+/*      Updated: 2025/11/13 08:27:35 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 #include "krakenlib.h"
@@ -116,23 +116,31 @@ void test_realloc(void)
     printf("\n🔹 TEST 4: Realloc Tests\n");
 
     char *ptr = malloc(50);
-    strcpy(ptr, "Hello, Kraken!");
+    printf("  malloc(50) = %p\n", ptr);
+    assert(ptr != NULL);
 
-    printf("  Original (50 bytes): '%s'\n", ptr);
+    strcpy(ptr, "Hello, Kraken!");
+    printf("  Original (50 bytes): '%s' at %p\n", ptr, ptr);
 
     // Grow
+    printf("  Calling realloc(%p, 100)...\n", ptr);
     ptr = realloc(ptr, 100);
+    printf("  realloc(100) returned: %p\n", ptr);
     assert(ptr != NULL);
     assert(strcmp(ptr, "Hello, Kraken!") == 0);
     printf("  After realloc(100): '%s'\n", ptr);
 
     // Shrink
+    printf("  Calling realloc(%p, 20)...\n", ptr);
     ptr = realloc(ptr, 20);
+    printf("  realloc(20) returned: %p\n", ptr);
     assert(ptr != NULL);
     printf("  After realloc(20): '%s'\n", ptr);
 
     // NULL realloc (should act like malloc)
+    printf("  Calling realloc(NULL, 50)...\n");
     void *new_ptr = realloc(NULL, 50);
+    printf("  realloc(NULL, 50) returned: %p\n", new_ptr);
     assert(new_ptr != NULL);
     free(new_ptr);
 

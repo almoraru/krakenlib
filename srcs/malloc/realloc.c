@@ -18,7 +18,7 @@
 /*      Filename: realloc.c                                                   */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:39:32 by espadara                              */
-/*      Updated: 2025/11/13 08:11:35 by espadara                              */
+/*      Updated: 2025/11/13 08:25:10 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,24 +26,44 @@
 
 bool check_block(const void *ptr, size_t size)
 {
-  void *block_addr;
+  t_page *page;
   t_block *block;
+  void *block_addr;
+
 
   if (size > ZONE_SMALL)
-    block = g_malloc_pages.large;
-  else if (size > ZONE_TINY)
-    block = (t_block *)g_malloc_pages.small + sizeof(t_page);
-  else
-    block = (t_block *)g_malloc_pages.tiny + sizeof(t_page);
-  block_addr = block + sizeof(t_block);
-  while (block && block_addr < ptr)
-  {
-    if (block_addr == ptr)
-      return (true);
-    block = block->next;
-    block_addr = block + sizeof(t_block);
+    {
+      block = g_malloc_pages.large;
+      while (block)
+        {
+          block_addr = (void *)block + sizeof(t_block);
+          if (block_addr == ptr)
+                return (true);
+          block = block->next;
+        }
+      return (false);
+    }
+
+  if (size > ZONE_TINY){
+    page = g_malloc_pages.small;
   }
-  return (false);
+  else{
+    page = g_malloc_pages.tiny;
+  }
+
+    while (page)
+      {
+        block = page->alloc;
+        while (block)
+          {
+            block_addr = (void *)block + sizeof(t_block);
+            if (block_addr == ptr)
+              return (true);
+            block = block->next;
+          }
+        page = page->next;
+      }
+    return (false);
 }
 
 void *realloc(void *ptr, size_t size)
