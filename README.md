@@ -448,4 +448,3 @@ This project is licensed under the Creative Commons 1.0 Universal License - see 
 Made with 🐙 by pirates of code
 
 </div>
-```
