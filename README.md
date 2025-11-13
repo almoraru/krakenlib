@@ -1,4 +1,3 @@
-```markdown
 # 🐙 KRAKENLIB - The Legendary C Library
 
 ```
@@ -17,6 +16,8 @@
        > _.="                            "=._ <
       (_/                                    \_)
 
+
+```
 
 **A powerful, production-ready C library featuring custom implementations of libc functions, malloc, printf, and more!**
 
