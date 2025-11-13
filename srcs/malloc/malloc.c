@@ -18,7 +18,7 @@
 /*      Filename: malloc.c                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:36:00 by espadara                              */
-/*      Updated: 2025/11/13 07:58:29 by espadara                              */
+/*      Updated: 2025/11/13 08:53:42 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,10 +101,10 @@ static inline void *malloc_tiny_small(t_page **page,
 
 static void *malloc_large(size_t size)
 {
-  const size_t msize = align_mem(size + sizeof(t_block), getpagesize() - 1);
+  const size_t msize = align_mem(size + sizeof(t_block), MASK_0XFFF);
   t_block *block;
 
-  if (((block = mmap(0, msize * 100, PROT_READ | PROT_WRITE,
+  if (((block = mmap(0, msize, PROT_READ | PROT_WRITE,
                      MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED))
     return ((void *)error_malloc(2, "Could not allocate large malloc"));
   block->size = align_mem(size, 31);

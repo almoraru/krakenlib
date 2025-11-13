@@ -9,7 +9,7 @@ static void free_unused_mem(const int malloc_size, t_page *mem)
     mem->prev->next = mem->next;
   else
   {
-    if (malloc_size)
+    if (malloc_size == MALLOC_TINY)
       g_malloc_pages.tiny = mem->next;
     else
       g_malloc_pages.small = mem->next;
@@ -60,11 +60,22 @@ static void free_block(t_block *block)
     free_large(block);
   else
   {
-    mem = (!type) ? g_malloc_pages.tiny : g_malloc_pages.small;
-    while (!((void *)block < (void *)mem + MALLOC_ZONE *
-                                               zone_sizes[type] &&
-             (void *)block > (void *)mem))
+    mem = (type == MALLOC_TINY) ? g_malloc_pages.tiny : g_malloc_pages.small;
+
+    while (mem)
+    {
+      if ((void *)block >= (void *)mem &&
+          (void *)block < (void *)mem + MALLOC_ZONE * zone_sizes[type])
+        break;
       mem = mem->next;
+    }
+
+    if (!mem)
+    {
+      write(2, "ERROR: Attempting to free invalid block\n", 41);
+      return;
+    }
+
     free_not_large(block, type, mem);
   }
 }
@@ -73,7 +84,7 @@ __attribute__((hot))
 void free(void *ptr)
 {
   pthread_mutex_lock(&g_malloc_mutex);
-  if (ptr && check_block(ptr, ZONE_SMALL + 1))
+  if (ptr && check_block(ptr))
     free_block(ptr - sizeof(t_block));
   pthread_mutex_unlock(&g_malloc_mutex);
 }

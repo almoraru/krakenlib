@@ -18,7 +18,7 @@
 /*      Filename: malloc.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:35:26 by espadara                              */
-/*      Updated: 2025/11/13 08:02:45 by espadara                              */
+/*      Updated: 2025/11/13 08:49:01 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,7 @@ void                *reallocf(void *ptr, size_t size);
 ** ---------- UTIL FUNCTIONS ----------
 */
 size_t              align_mem(size_t size, size_t mask);
-bool                check_block(const void *ptr, size_t size);
+bool                check_block(const void *ptr);
 void                putaddr(void *addr);
 size_t              page_size(size_t type);
 
