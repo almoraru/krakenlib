@@ -253,17 +253,50 @@ sea_sprintf(buffer, "Value: %d", 42);
 ### 4. Get Next Line
 
 ```c
-int     fd;
-char    *line;
-int     len;
+#include "sea_get_line.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h> // Essential for error checking
 
-fd = open("file.txt", O_RDONLY);
-while ((len = sea_get_line(fd, &line)) > 0)
+int main(void)
 {
-    sea_printf("%s\n", line);
-    free(line);
+    int   fd;
+    char  *line;
+
+    fd = open("my_file.txt", O_RDONLY);
+    if (fd < 0)
+        return (1);
+
+    // 1. Reset errno before the loop
+    errno = 0;
+
+    // 2. Loop while a line is returned
+    while ((line = sea_get_line(fd)) != NULL)
+    {
+        printf("%s", line); // line includes the \n
+        
+        // CRITICAL: You must free the line!
+        free(line);
+        
+        // Reset errno for the next iteration safety
+        errno = 0;
+    }
+
+    // 3. Check why the loop stopped
+    if (errno != 0)
+    {
+        perror("Error reading file");
+    }
+    else
+    {
+        printf("End of file reached successfully.\n");
+    }
+
+    close(fd);
+    return (0);
 }
-close(fd);
 ```
 
 ### 5. Linked Lists
