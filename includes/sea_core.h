@@ -18,12 +18,12 @@
 /*      Filename: sealib.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/08/23 15:35:18 by espadara                              */
-/*      Updated: 2025/11/13 00:18:34 by espadara                              */
+/*      Updated: 2025/11/22 11:15:54 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SEA_CORE_H
-# define SEALIB_H
+# define SEA_CORE_H
 
 /* INCLUDES */
 

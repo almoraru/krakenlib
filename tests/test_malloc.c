@@ -18,7 +18,7 @@
 /*      Filename: test.c                                                      */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:41:16 by espadara                              */
-/*      Updated: 2025/11/13 08:27:35 by espadara                              */
+/*      Updated: 2025/11/22 11:17:17 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 #include "krakenlib.h"
@@ -248,21 +248,6 @@ void test_stress(void)
     printf("  ✅ Stress test passed!\n");
 }
 
-void test_double_free_detection(void)
-{
-    printf("\n🔹 TEST 9: Double Free Detection\n");
-
-    void *ptr = malloc(100);
-    free(ptr);
-
-    printf("  First free: OK\n");
-
-    // This SHOULD be detected by your malloc (if implemented)
-    // For now, just document it
-    printf("  ⚠️  Double free detection not yet implemented\n");
-    printf("  (Would crash on: free(ptr) again)\n");
-}
-
 void test_original_demo(void)
 {
     printf("\n🔹 TEST 10: Original Demo\n");
@@ -314,7 +299,6 @@ int main(void)
     test_fragmentation();
     test_large_allocations();
     test_stress();
-    test_double_free_detection();
     test_original_demo();
 
     printf("\n");
