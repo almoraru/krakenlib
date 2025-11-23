@@ -18,7 +18,7 @@
 /*      Filename: sealib.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/08/23 15:35:18 by espadara                              */
-/*      Updated: 2025/11/22 11:15:54 by espadara                              */
+/*      Updated: 2025/11/23 17:36:43 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,7 @@
 # include <limits.h>
 # include <fcntl.h>
 # include <sys/mman.h>
-
+# include <stdint.h>
 
 /* DEFINES  */
 
@@ -105,8 +105,8 @@ void	sea_striteri(char *s, void (*f)(unsigned int, char *));
 void	*sea_memset(void *s, int c, size_t n);
 void	*sea_memcpy(void *dest, const void *src, size_t n);
 void	*sea_memmove(void *dest, const void *src, size_t n);
-void	*sea_memchr(void *s, int c, size_t n);
-int	sea_memcmp(const char *s1, const char *s2, size_t n);
+void	*sea_memchr(const void *s, int c, size_t n);
+int	sea_memcmp(const void *s1, const void *s2, size_t n);
 t_mem	*sea_arena_init(size_t size);
 void	*sea_arena_alloc(t_mem *arena, size_t size);
 void	sea_arena_free(t_mem *arena);

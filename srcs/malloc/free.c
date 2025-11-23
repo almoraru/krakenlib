@@ -85,7 +85,7 @@ static bool free_large(void *ptr)
 }
 
 __attribute__((visibility("default")))
-void free(void *ptr)
+void sea_free(void *ptr)
 {
   t_slab  *slab;
   int     type = 0;

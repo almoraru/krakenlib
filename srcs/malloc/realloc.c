@@ -25,7 +25,7 @@
 #include "sea_malloc.h"
 
 __attribute__((visibility("default")))
-void *realloc(void *ptr, size_t size)
+void *sea_realloc(void *ptr, size_t size)
 {
   t_slab  *slab;
   size_t  old_size;
@@ -33,10 +33,10 @@ void *realloc(void *ptr, size_t size)
   int     type;
 
   if (!ptr)
-    return (malloc(size));
+    return (sea_malloc(size));
   if (size == 0)
     {
-      free(ptr);
+      sea_free(ptr);
       return (NULL);
     }
   pthread_mutex_lock(&g_malloc_mutex);
@@ -53,27 +53,27 @@ void *realloc(void *ptr, size_t size)
       return (ptr);
     }
   pthread_mutex_unlock(&g_malloc_mutex);
-  new_ptr = malloc(size);
+  new_ptr = sea_malloc(size);
   if (!new_ptr)
     return (NULL);
   sea_memcpy_fast(new_ptr, ptr, old_size);
-  free(ptr);
+  sea_free(ptr);
 
   return (new_ptr);
 }
 
 __attribute__((visibility("default")))
-void *reallocf(void *ptr, size_t size)
+void *sea_reallocf(void *ptr, size_t size)
 {
   void *new_ptr;
-  new_ptr = realloc(ptr, size);
+  new_ptr = sea_realloc(ptr, size);
   if (!new_ptr && ptr)
-    free(ptr);
+    sea_free(ptr);
   return (new_ptr);
 }
 
 __attribute__((visibility("default")))
-void *calloc(size_t count, size_t size)
+void *sea_calloc(size_t count, size_t size)
 {
   void *ptr;
   size_t total;
@@ -82,7 +82,7 @@ void *calloc(size_t count, size_t size)
   if (count != 0 && total / count != size)
     return (NULL);
 
-  ptr = malloc(total);
+  ptr = sea_malloc(total);
   if (ptr)
     sea_bzero(ptr, total);
   return (ptr);

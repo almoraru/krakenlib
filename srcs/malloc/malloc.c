@@ -181,7 +181,7 @@ static void *allocate_large(size_t size)
 }
 
 __attribute__((visibility("default")))
-void *malloc(size_t size)
+void *sea_malloc(size_t size)
 {
   void *ptr;
 

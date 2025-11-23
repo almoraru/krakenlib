@@ -36,10 +36,10 @@ void test_basic_allocations(void)
 {
     printf("\n🔹 TEST 1: Basic Allocations\n");
 
-    void *ptr1 = malloc(10);
-    void *ptr2 = malloc(100);
-    void *ptr3 = malloc(1000);
-    void *ptr4 = malloc(10000);
+    void *ptr1 = sea_malloc(10);
+    void *ptr2 = sea_malloc(100);
+    void *ptr3 = sea_malloc(1000);
+    void *ptr4 = sea_malloc(10000);
 
     assert(ptr1 != NULL);
     assert(ptr2 != NULL);
@@ -58,10 +58,10 @@ void test_basic_allocations(void)
     assert(((char*)ptr3)[0] == 'C');
     assert(((char*)ptr4)[0] == 'D');
 
-    free(ptr1);
-    free(ptr2);
-    free(ptr3);
-    free(ptr4);
+    sea_free(ptr1);
+    sea_free(ptr2);
+    sea_free(ptr3);
+    sea_free(ptr4);
 
     printf("  ✅ Basic allocations work!\n");
 }
@@ -71,12 +71,12 @@ void test_zone_boundaries(void)
     printf("\n🔹 TEST 2: Zone Boundaries\n");
 
     // Test TINY zone boundary (64 bytes)
-    void *tiny_max = malloc(64);
-    void *tiny_over = malloc(65);
+    void *tiny_max = sea_malloc(64);
+    void *tiny_over = sea_malloc(65);
 
     // Test SMALL zone boundary (1024 bytes)
-    void *small_max = malloc(1024);
-    void *small_over = malloc(1025);
+    void *small_max = sea_malloc(1024);
+    void *small_over = sea_malloc(1025);
 
     assert(tiny_max != NULL);
     assert(tiny_over != NULL);
@@ -88,10 +88,10 @@ void test_zone_boundaries(void)
     printf("  SMALL max (1024): %p\n", small_max);
     printf("  SMALL over (1025): %p\n", small_over);
 
-    free(tiny_max);
-    free(tiny_over);
-    free(small_max);
-    free(small_over);
+    sea_free(tiny_max);
+    sea_free(tiny_over);
+    sea_free(small_max);
+    sea_free(small_over);
 
     printf("  ✅ Zone boundaries work!\n");
 }
@@ -100,13 +100,13 @@ void test_zero_and_null(void)
 {
     printf("\n🔹 TEST 3: Zero Size and NULL\n");
 
-    void *zero = malloc(0);
-    printf("  malloc(0) returned: %p\n", zero);
+    void *zero = sea_malloc(0);
+    printf("  sea_malloc(0) returned: %p\n", zero);
 
-    free(NULL);  // Should not crash
-    printf("  free(NULL) didn't crash\n");
+    sea_free(NULL);  // Should not crash
+    printf("  sea_free(NULL) didn't crash\n");
 
-    free(zero);
+    sea_free(zero);
 
     printf("  ✅ Edge cases handled!\n");
 }
@@ -115,36 +115,36 @@ void test_realloc(void)
 {
     printf("\n🔹 TEST 4: Realloc Tests\n");
 
-    char *ptr = malloc(50);
-    printf("  malloc(50) = %p\n", ptr);
+    char *ptr = sea_malloc(50);
+    printf("  sea_malloc(50) = %p\n", ptr);
     assert(ptr != NULL);
 
     strcpy(ptr, "Hello, Kraken!");
     printf("  Original (50 bytes): '%s' at %p\n", ptr, ptr);
 
     // Grow
-    printf("  Calling realloc(%p, 100)...\n", ptr);
-    ptr = realloc(ptr, 100);
-    printf("  realloc(100) returned: %p\n", ptr);
+    printf("  Calling sea_realloc(%p, 100)...\n", ptr);
+    ptr = sea_realloc(ptr, 100);
+    printf("  sea_realloc(100) returned: %p\n", ptr);
     assert(ptr != NULL);
     assert(strcmp(ptr, "Hello, Kraken!") == 0);
-    printf("  After realloc(100): '%s'\n", ptr);
+    printf("  After sea_realloc(100): '%s'\n", ptr);
 
     // Shrink
-    printf("  Calling realloc(%p, 20)...\n", ptr);
-    ptr = realloc(ptr, 20);
-    printf("  realloc(20) returned: %p\n", ptr);
+    printf("  Calling sea_realloc(%p, 20)...\n", ptr);
+    ptr = sea_realloc(ptr, 20);
+    printf("  sea_realloc(20) returned: %p\n", ptr);
     assert(ptr != NULL);
-    printf("  After realloc(20): '%s'\n", ptr);
+    printf("  After sea_realloc(20): '%s'\n", ptr);
 
     // NULL realloc (should act like malloc)
-    printf("  Calling realloc(NULL, 50)...\n");
-    void *new_ptr = realloc(NULL, 50);
-    printf("  realloc(NULL, 50) returned: %p\n", new_ptr);
+    printf("  Calling sea_realloc(NULL, 50)...\n");
+    void *new_ptr = sea_realloc(NULL, 50);
+    printf("  sea_realloc(NULL, 50) returned: %p\n", new_ptr);
     assert(new_ptr != NULL);
-    free(new_ptr);
+    sea_free(new_ptr);
 
-    free(ptr);
+    sea_free(ptr);
 
     printf("  ✅ Realloc works!\n");
 }
@@ -153,7 +153,7 @@ void test_calloc(void)
 {
     printf("\n🔹 TEST 5: Calloc (zero-initialized)\n");
 
-    int *arr = calloc(10, sizeof(int));
+    int *arr = sea_calloc(10, sizeof(int));
     assert(arr != NULL);
 
     int all_zero = 1;
@@ -167,7 +167,7 @@ void test_calloc(void)
     assert(all_zero);
     printf("  ✅ Calloc zeros memory!\n");
 
-    free(arr);
+    sea_free(arr);
 }
 
 void test_fragmentation(void)
@@ -178,24 +178,24 @@ void test_fragmentation(void)
 
     // Allocate 100 small blocks
     for (int i = 0; i < 100; i++) {
-        ptrs[i] = malloc(32);
+        ptrs[i] = sea_malloc(32);
         assert(ptrs[i] != NULL);
     }
 
     // Free every other block (create holes)
     for (int i = 0; i < 100; i += 2) {
-        free(ptrs[i]);
+        sea_free(ptrs[i]);
     }
 
     // Allocate more (should reuse freed blocks)
     for (int i = 0; i < 100; i += 2) {
-        ptrs[i] = malloc(32);
+        ptrs[i] = sea_malloc(32);
         assert(ptrs[i] != NULL);
     }
 
     // Free all
     for (int i = 0; i < 100; i++) {
-        free(ptrs[i]);
+        sea_free(ptrs[i]);
     }
 
     printf("  ✅ Fragmentation handled!\n");
@@ -205,8 +205,8 @@ void test_large_allocations(void)
 {
     printf("\n🔹 TEST 7: Large Allocations\n");
 
-    void *huge1 = malloc(1024 * 1024);      // 1 MB
-    void *huge2 = malloc(1024 * 1024 * 5);  // 5 MB
+    void *huge1 = sea_malloc(1024 * 1024);      // 1 MB
+    void *huge2 = sea_malloc(1024 * 1024 * 5);  // 5 MB
 
     assert(huge1 != NULL);
     assert(huge2 != NULL);
@@ -220,8 +220,8 @@ void test_large_allocations(void)
     assert(((unsigned char*)huge1)[0] == 0xFF);
     assert(((unsigned char*)huge2)[0] == 0xAA);
 
-    free(huge1);
-    free(huge2);
+    sea_free(huge1);
+    sea_free(huge2);
 
     printf("  ✅ Large allocations work!\n");
 }
@@ -235,14 +235,14 @@ void test_stress(void)
     for (int i = 0; i < STRESS_TEST_COUNT; i++) {
         // Random sizes
         size_t size = (i % 10) * 100 + 10;
-        ptrs[i] = malloc(size);
+        ptrs[i] = sea_malloc(size);
         assert(ptrs[i] != NULL);
         memset(ptrs[i], i % 256, size);
     }
 
     // Free in reverse order
     for (int i = STRESS_TEST_COUNT - 1; i >= 0; i--) {
-        free(ptrs[i]);
+        sea_free(ptrs[i]);
     }
 
     printf("  ✅ Stress test passed!\n");
@@ -257,17 +257,17 @@ void test_original_demo(void)
     for (int i = 0; i < 20; i++)
     {
         if ((i % 2) == 0)
-            ptr[i] = malloc(600);
+            ptr[i] = sea_malloc(600);
         else if ((i % 5) == 0)
-            ptr[i] = malloc(5000);
+            ptr[i] = sea_malloc(5000);
         else if ((i % 3) == 0)
-            ptr[i] = malloc(200);
+            ptr[i] = sea_malloc(200);
         else if ((i % 8) == 0)
-            ptr[i] = malloc(1000);
+            ptr[i] = sea_malloc(1000);
         else if ((i % 7) == 0)
-            ptr[i] = malloc(10000000);
+            ptr[i] = sea_malloc(10000000);
         else
-            ptr[i] = malloc(50);
+            ptr[i] = sea_malloc(50);
     }
 
     show_alloc_mem();
@@ -279,7 +279,7 @@ void test_original_demo(void)
     show_alloc_mem_ex(ptr[3]);
 
     for (int i = 0; i < 20; i++)
-        free(ptr[i]);
+        sea_free(ptr[i]);
 
     printf("\n  ✅ Original demo passed!\n");
 }

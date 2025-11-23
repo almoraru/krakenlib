@@ -18,7 +18,7 @@
 #      Filename: Makefile                                                      #
 #      By: espadara <espadara@pirate.capn.gg>                                  #
 #      Created: 2025/11/12 23:58:25 by espadara                                #
-#      Updated: 2025/11/13 22:37:35 by espadara                                #
+#      Updated: 2025/11/23 17:41:19 by espadara                                #
 #                                                                              #
 # ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; #
 
@@ -117,7 +117,7 @@ banner:
 	@echo -e "      > _.=\"                            \"=._ <"
 	@echo -e "     (_/                                    \\_)"
 	@echo -e ""
-	@echo -e "          🐙 KRAKENLIB v1.0.0 🏴‍☠️"
+	@echo -e "          🐙 KRAKENLIB v2.0.0 🏴‍☠️"
 	@echo -e "       \"Release the Kraken!\""
 	@echo -e "$(NC)"
 

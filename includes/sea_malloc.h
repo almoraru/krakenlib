@@ -18,7 +18,7 @@
 /*      Filename: malloc.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:35:26 by espadara                              */
-/*      Updated: 2025/11/23 16:53:13 by espadara                              */
+/*      Updated: 2025/11/23 17:39:10 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,8 +63,8 @@
 ** Aligned to Page: 106496 bytes (26 pages)
 */
 
-# define SMALL_BLOCK_MAX 1024
-# define SMALL_ZONE_SIZE 106496
+# define SMALL_BLOCK_MAX 8192
+# define SMALL_ZONE_SIZE (1024 * 1024)
 
 /*
 ** Alignment: Minimum block size (16 bytes for 128-bit SIMD safety) = ez memfastcpy
@@ -125,10 +125,10 @@ extern pthread_mutex_t g_malloc_mutex;
 /*
 ** ---------- PROTOTYPES ----------
 */
-void	*malloc(size_t size);
-void	free(void *ptr);
-void	*realloc(void *ptr, size_t size);
-void	*calloc(size_t count, size_t size);
+void	*sea_malloc(size_t size);
+void	sea_free(void *ptr);
+void	*sea_realloc(void *ptr, size_t size);
+void	*sea_calloc(size_t count, size_t size);
 
 /* Helper functions */
 void	show_alloc_mem(void);
