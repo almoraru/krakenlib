@@ -18,10 +18,9 @@
 /*      Filename: benchmark.c                                                 */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/13 22:35:31 by espadara                              */
-/*      Updated: 2025/11/23 17:02:54 by espadara                              */
+/*      Updated: 2025/11/23 17:57:52 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
-
 #include "krakenlib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -211,177 +210,6 @@ void benchmark_memcpy(benchmark_result *result)
 }
 
 // ============================================================
-// MALLOC BENCHMARKS
-// ============================================================
-
-void benchmark_malloc_small(benchmark_result *result)
-{
-    void *ptrs[1000];
-    double start, end;
-    uint64_t cycles_start, cycles_end;
-
-    printf("  Benchmarking malloc (16 bytes)...\n");
-
-    // --- KRAKEN ---
-    // Warmup
-    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
-        void *p = sea_malloc(16);
-        COMPILER_BARRIER();
-        sea_free(p);
-    }
-
-    start = get_time();
-    cycles_start = rdtsc();
-    for (int i = 0; i < ITERATIONS; i++) {
-        ptrs[i % 1000] = sea_malloc(16);
-        COMPILER_BARRIER();
-        if (i % 1000 == 999) {
-            for (int j = 0; j < 1000; j++)
-                sea_free(ptrs[j]);
-        }
-    }
-    cycles_end = rdtsc();
-    end = get_time();
-    result->kraken_time = (end - start) / ITERATIONS * 1e9;
-    result->kraken_cycles = (double)(cycles_end - cycles_start) / ITERATIONS;
-
-    // --- SYSTEM ---
-    // Warmup
-    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
-        void *p = malloc(16);
-        COMPILER_BARRIER();
-        free(p);
-    }
-
-    start = get_time();
-    cycles_start = rdtsc();
-    for (int i = 0; i < ITERATIONS; i++) {
-        ptrs[i % 1000] = malloc(16);
-        COMPILER_BARRIER();
-        if (i % 1000 == 999) {
-            for (int j = 0; j < 1000; j++)
-                free(ptrs[j]);
-        }
-    }
-    cycles_end = rdtsc();
-    end = get_time();
-    result->libc_time = (end - start) / ITERATIONS * 1e9;
-    result->libc_cycles = (double)(cycles_end - cycles_start) / ITERATIONS;
-
-    result->name = "malloc(16)";
-}
-
-void benchmark_malloc_medium(benchmark_result *result)
-{
-    void *ptrs[1000];
-    double start, end;
-    uint64_t cycles_start, cycles_end;
-
-    printf("  Benchmarking malloc (512 bytes)...\n");
-
-    // --- KRAKEN ---
-    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
-        void *p = sea_malloc(512);
-        COMPILER_BARRIER();
-        sea_free(p);
-    }
-
-    start = get_time();
-    cycles_start = rdtsc();
-    for (int i = 0; i < ITERATIONS / 10; i++) {
-        ptrs[i % 1000] = sea_malloc(512);
-        COMPILER_BARRIER();
-        if (i % 1000 == 999) {
-            for (int j = 0; j < 1000; j++)
-                sea_free(ptrs[j]);
-        }
-    }
-    cycles_end = rdtsc();
-    end = get_time();
-    result->kraken_time = (end - start) / (ITERATIONS / 10) * 1e9;
-    result->kraken_cycles = (double)(cycles_end - cycles_start) / (ITERATIONS / 10);
-
-    // --- SYSTEM ---
-    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
-        void *p = malloc(512);
-        COMPILER_BARRIER();
-        free(p);
-    }
-
-    start = get_time();
-    cycles_start = rdtsc();
-    for (int i = 0; i < ITERATIONS / 10; i++) {
-        ptrs[i % 1000] = malloc(512);
-        COMPILER_BARRIER();
-        if (i % 1000 == 999) {
-            for (int j = 0; j < 1000; j++)
-                free(ptrs[j]);
-        }
-    }
-    cycles_end = rdtsc();
-    end = get_time();
-    result->libc_time = (end - start) / (ITERATIONS / 10) * 1e9;
-    result->libc_cycles = (double)(cycles_end - cycles_start) / (ITERATIONS / 10);
-
-    result->name = "malloc(512)";
-}
-
-void benchmark_malloc_large(benchmark_result *result)
-{
-    void *ptrs[100];
-    double start, end;
-    uint64_t cycles_start, cycles_end;
-
-    printf("  Benchmarking malloc (4096 bytes)...\n");
-
-    // --- KRAKEN ---
-    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
-        void *p = sea_malloc(4096);
-        COMPILER_BARRIER();
-        sea_free(p);
-    }
-
-    start = get_time();
-    cycles_start = rdtsc();
-    for (int i = 0; i < ITERATIONS / 100; i++) {
-        ptrs[i % 100] = sea_malloc(4096);
-        COMPILER_BARRIER();
-        if (i % 100 == 99) {
-            for (int j = 0; j < 100; j++)
-                sea_free(ptrs[j]);
-        }
-    }
-    cycles_end = rdtsc();
-    end = get_time();
-    result->kraken_time = (end - start) / (ITERATIONS / 100) * 1e9;
-    result->kraken_cycles = (double)(cycles_end - cycles_start) / (ITERATIONS / 100);
-
-    // --- SYSTEM ---
-    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
-        void *p = malloc(4096);
-        COMPILER_BARRIER();
-        free(p);
-    }
-
-    start = get_time();
-    cycles_start = rdtsc();
-    for (int i = 0; i < ITERATIONS / 100; i++) {
-        ptrs[i % 100] = malloc(4096);
-        COMPILER_BARRIER();
-        if (i % 100 == 99) {
-            for (int j = 0; j < 100; j++)
-                free(ptrs[j]);
-        }
-    }
-    cycles_end = rdtsc();
-    end = get_time();
-    result->libc_time = (end - start) / (ITERATIONS / 100) * 1e9;
-    result->libc_cycles = (double)(cycles_end - cycles_start) / (ITERATIONS / 100);
-
-    result->name = "malloc(4096)";
-}
-
-// ============================================================
 // PRINTF BENCHMARK
 // ============================================================
 
@@ -435,6 +263,72 @@ void benchmark_printf(benchmark_result *result)
 }
 
 // ============================================================
+// MALLOC BENCHMARK HELPER
+// ============================================================
+
+// Generic runner for malloc benchmarks to reduce code duplication
+void run_malloc_bench(const char *name, size_t size, int divider, benchmark_result *result)
+{
+    void *ptrs[1000];
+    double start, end;
+    uint64_t cycles_start, cycles_end;
+    int iters = ITERATIONS / divider;
+    int batch_size = 100; // Reduced batch size for larger allocs
+
+    if (size < 4096) batch_size = 1000;
+
+    printf("  Benchmarking malloc (%zu bytes)...\n", size);
+
+    // --- KRAKEN ---
+    // Warmup
+    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
+        void *p = sea_malloc(size);
+        COMPILER_BARRIER();
+        sea_free(p);
+    }
+
+    start = get_time();
+    cycles_start = rdtsc();
+    for (int i = 0; i < iters; i++) {
+        ptrs[i % batch_size] = sea_malloc(size);
+        COMPILER_BARRIER();
+        if (i % batch_size == (batch_size - 1)) {
+            for (int j = 0; j < batch_size; j++)
+                sea_free(ptrs[j]);
+        }
+    }
+    cycles_end = rdtsc();
+    end = get_time();
+    result->kraken_time = (end - start) / iters * 1e9;
+    result->kraken_cycles = (double)(cycles_end - cycles_start) / iters;
+
+    // --- SYSTEM ---
+    // Warmup
+    for (int i = 0; i < WARMUP_ITERATIONS / 100; i++) {
+        void *p = malloc(size);
+        COMPILER_BARRIER();
+        free(p);
+    }
+
+    start = get_time();
+    cycles_start = rdtsc();
+    for (int i = 0; i < iters; i++) {
+        ptrs[i % batch_size] = malloc(size);
+        COMPILER_BARRIER();
+        if (i % batch_size == (batch_size - 1)) {
+            for (int j = 0; j < batch_size; j++)
+                free(ptrs[j]);
+        }
+    }
+    cycles_end = rdtsc();
+    end = get_time();
+    result->libc_time = (end - start) / iters * 1e9;
+    result->libc_cycles = (double)(cycles_end - cycles_start) / iters;
+
+    result->name = name;
+}
+
+// ============================================================
 // MAIN BENCHMARK RUNNER
 // ============================================================
 
@@ -444,6 +338,12 @@ void print_results(benchmark_result *results, int count)
     printf("🐙 ============================================== 🐙\n");
     printf("              BENCHMARK RESULTS\n");
     printf("🐙 ============================================== 🐙\n\n");
+
+    printf("System Info:\n");
+    printf("  CPU: AMD Ryzen 9 7950X3D\n");
+    printf("  Iterations: %d per test (scaled down for larger allocs)\n", ITERATIONS);
+    printf("  Compiler: GCC with -O2 optimization\n");
+    printf("\n");
 
     printf("%-22s | %12s | %12s | %10s\n",
            "Operation", "Kraken (ns)", "libc (ns)", "Difference");
@@ -477,7 +377,7 @@ void print_results(benchmark_result *results, int count)
 
 int main(void)
 {
-    benchmark_result results[10];
+    benchmark_result results[20]; // Increased size for new tests
     int idx = 0;
 
     printf("\n");
@@ -495,10 +395,18 @@ int main(void)
     printf("\nFormatted Output:\n");
     benchmark_printf(&results[idx++]);
 
-    printf("\nMemory Allocation:\n");
-    benchmark_malloc_small(&results[idx++]);
-    benchmark_malloc_medium(&results[idx++]);
-    benchmark_malloc_large(&results[idx++]);
+    printf("\nMemory Allocation (Small/Medium - Slab):\n");
+    run_malloc_bench("malloc(16)", 16, 1, &results[idx++]);
+    run_malloc_bench("malloc(512)", 512, 10, &results[idx++]);
+    run_malloc_bench("malloc(4096)", 4096, 100, &results[idx++]);
+    run_malloc_bench("malloc(8192)", 8192, 100, &results[idx++]); // Max Small
+
+    printf("\nMemory Allocation (Large - Mmap/Cache):\n");
+    run_malloc_bench("malloc(32KB)", 32 * 1024, 1000, &results[idx++]);
+    run_malloc_bench("malloc(64KB)", 64 * 1024, 1000, &results[idx++]);
+    run_malloc_bench("malloc(512KB)", 512 * 1024, 1000, &results[idx++]);
+    run_malloc_bench("malloc(1MB)", 1024 * 1024, 2000, &results[idx++]);
+    run_malloc_bench("malloc(16MB)", 16 * 1024 * 1024, 10000, &results[idx++]);
 
     print_results(results, idx);
 

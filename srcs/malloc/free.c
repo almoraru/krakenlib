@@ -18,7 +18,7 @@
 /*      Filename: free.c                                                      */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/22 12:08:27 by espadara                              */
-/*      Updated: 2025/11/23 17:52:06 by espadara                              */
+/*      Updated: 2025/11/23 17:56:48 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,22 +79,18 @@ static bool free_large(void *ptr)
           // CACHING LOGIC
           if (g_heap.cache_count < CACHE_SIZE)
           {
-              // Reset metadata for cleanliness (optional but good)
-              slab->prev = NULL;
-              // Add to cache list head
-              slab->next = g_heap.cache_large;
-              if (g_heap.cache_large)
-                  g_heap.cache_large->prev = slab;
-              g_heap.cache_large = slab;
-
-              g_heap.cache_count++;
+            slab->prev = NULL;
+            // Add to cache list head
+            slab->next = g_heap.cache_large;
+            if (g_heap.cache_large)
+              g_heap.cache_large->prev = slab;
+            g_heap.cache_large = slab;
+            g_heap.cache_count++;
           }
           else
-          {
+            {
               // Cache full, really unmap
               size_t total_size = slab->block_size + sizeof(t_slab);
-              // We need the original mmap size. Assuming block_size was set correctly
-              // in allocate_large as (total - header).
               // Re-align to page size just to be safe for munmap length
               total_size = (total_size + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
               munmap(slab, total_size);
