@@ -48,11 +48,11 @@
 - **Conversions**: `sea_atoi`, `sea_itoa`, `sea_atol`, number base conversions
 
 ### 💾 Custom Memory Allocator
-- **Dynamic memory management** with custom `malloc`, `free`, `realloc`, `calloc`
+- **Dynamic memory management** with custom `sea_malloc`, `sea_free`, `sea_realloc`, `sea_calloc`
 - **Three-tier allocation strategy**:
-  - TINY (≤64 bytes)
-  - SMALL (65-1024 bytes)  
-  - LARGE (>1024 bytes)
+  - TINY (≤128 bytes) - 16KB zone size
+  - SMALL (129-8192 bytes) - 1MB zone size
+  - LARGE (>8192 bytes) - Direct mmap allocation
 - **Memory introspection**: `show_alloc_mem()`, `show_alloc_mem_ex()`
 - **Thread-safe** with mutex protection
 - **Memory efficient** with block reuse and defragmentation
@@ -126,7 +126,7 @@ int main(void)
     sea_printf("String: %s\n", str);
     
     // Memory allocation
-    int *arr = malloc(10 * sizeof(int));
+    int *arr = sea_malloc(10 * sizeof(int));
     for (int i = 0; i < 10; i++)
         arr[i] = i;
     
@@ -139,13 +139,13 @@ int main(void)
     while (sea_get_line(fd, &line) > 0)
     {
         sea_printf("%s\n", line);
-        free(line);
+        sea_free(line);
     }
     close(fd);
     
     // Cleanup
-    free(str);
-    free(arr);
+    sea_free(str);
+    sea_free(arr);
     
     return 0;
 }
@@ -195,19 +195,19 @@ int     sea_toupper(int c);
 int     sea_tolower(int c);
 ```
 
-### 2. Memory Allocator (`malloc`, `free`, `realloc`, `calloc`)
+### 2. Memory Allocator (`sea_malloc`, `sea_free`, `sea_realloc`, `sea_calloc`)
 
 ```c
 // Standard allocation
-void *ptr = malloc(1024);
-free(ptr);
+void *ptr = sea_malloc(1024);
+sea_free(ptr);
 
 // Reallocation
-ptr = malloc(100);
-ptr = realloc(ptr, 200);
+ptr = sea_malloc(100);
+ptr = sea_realloc(ptr, 200);
 
 // Zero-initialized allocation
-int *arr = calloc(10, sizeof(int));
+int *arr = sea_calloc(10, sizeof(int));
 
 // Memory inspection
 show_alloc_mem();           // Show all allocations
@@ -215,9 +215,9 @@ show_alloc_mem_ex(ptr);     // Show hex dump of allocation
 ```
 
 **Memory Zones:**
-- **TINY**: 64 bytes per block, 128 blocks per page
-- **SMALL**: 1024 bytes per block, 128 blocks per page
-- **LARGE**: Direct mmap allocation
+- **TINY**: ≤128 bytes, 16KB zone size (optimized for small allocations)
+- **SMALL**: 129-8192 bytes, 1MB zone size (designed to hold 100 blocks of 1024 bytes, page-aligned at 106496 bytes)
+- **LARGE**: >8192 bytes, direct mmap allocation
 
 ### 3. Printf (`sea_printf`)
 
@@ -270,7 +270,7 @@ int main(void)
         printf("%s", line); // line includes the \n
         
         // CRITICAL: You must free the line!
-        free(line);
+        sea_free(line);
         
         // Reset errno for the next iteration safety
         errno = 0;
@@ -303,10 +303,10 @@ sea_lstadd_front(&head, sea_lstnew("Zero"));
 sea_lstiter(head, &print_content);
 
 // Map (transform)
-t_list *new_list = sea_lstmap(head, &transform, &free);
+t_list *new_list = sea_lstmap(head, &transform, &sea_free);
 
 // Clear
-sea_lstclear(&head, &free);
+sea_lstclear(&head, &sea_free);
 ```
 
 ---
@@ -369,23 +369,23 @@ Iterations: 1,000,000 per test (scaled down for larger allocations)
 
 | Operation | Kraken (ns) | libc (ns) | Cycles (Kraken) | Cycles (libc) | Difference |
 |-----------|-------------|-----------|-----------------|---------------|------------|
-| `sea_strlen` | 1.79 | 2.14 | 8 | 9 | **-16.6%** ✅ |
+| `sea_strlen` | 1.79 | 2.14 | 8 | 9 | **-16.6%** |
 | `sea_strcmp` | 8.08 | 2.25 | 34 | 9 | +259.7% |
-| `sea_memcpy_fast(1KB)` | 17.22 | 13.91 | 72 | 58 | +23.8% |
+| `sea_memcpy_fast(1KB)` | 12.46 | 14.11 | 52 | 58 | **-11.7%** |
 
 #### Memory Allocation
 
 | Operation | Kraken (ns) | libc (ns) | Cycles (Kraken) | Cycles (libc) | Difference |
 |-----------|-------------|-----------|-----------------|---------------|------------|
-| `malloc(16)` | 19.57 | 6.72 | 82 | 28 | +191.1% |
-| `malloc(512)` | 33.00 | 108.87 | 139 | 457 | **-69.7%** ✅ |
-| `malloc(4KB)` | 168.24 | 717.45 | 707 | 3013 | **-76.6%** ✅ |
-| `malloc(8KB)` | 272.71 | 1005.12 | 1145 | 4221 | **-76.9%** ✅ |
-| `malloc(32KB)` | 4925.30 | 1194.72 | 20685 | 5018 | +312.3% |
-| `malloc(64KB)` | 5159.29 | 1632.99 | 21667 | 6858 | +215.9% |
-| `malloc(512KB)` | 5914.44 | 2311.60 | 24840 | 9708 | +155.9% |
-| `malloc(1MB)` | 4906.26 | 2572.84 | 20606 | 10805 | +90.7% |
-| `malloc(16MB)` | 6107.10 | 5974.39 | 25647 | 25090 | +2.2% |
+| `sea_malloc(16)` | 19.57 | 6.72 | 82 | 28 | +191.1% |
+| `sea_malloc(512)` | 33.00 | 108.87 | 139 | 457 | **-69.7%** |
+| `sea_malloc(4KB)` | 168.24 | 717.45 | 707 | 3013 | **-76.6%** |
+| `sea_malloc(8KB)` | 272.71 | 1005.12 | 1145 | 4221 | **-72.9%** |
+| `sea_malloc(32KB)` | 4925.30 | 1194.72 | 20685 | 5018 | +312.3% |
+| `sea_malloc(64KB)` | 5159.29 | 1632.99 | 21667 | 6858 | +215.9% |
+| `sea_malloc(512KB)` | 5914.44 | 2311.60 | 24840 | 9708 | +155.9% |
+| `sea_malloc(1MB)` | 4906.26 | 2572.84 | 20606 | 10805 | +90.7% |
+| `sea_malloc(16MB)` | 6107.10 | 5974.39 | 25647 | 25090 | +2.2% |
 
 #### Formatted Output
 
@@ -433,31 +433,33 @@ Iterations: 1,000,000 per test (scaled down for larger allocations)
 ### Memory Layout
 
 ```
-TINY ZONE (64 bytes per block)
+TINY ZONE (≤128 bytes per block)
 ┌─────────────────────────────────────┐
-│ t_page header                       │
+│ Zone metadata                       │
 ├─────────────────────────────────────┤
-│ t_block + 64 bytes data            │
-│ t_block + 64 bytes data            │
+│ Block + data (up to 128 bytes)     │
+│ Block + data (up to 128 bytes)     │
 │ ...                                │
+│ Total zone size: 16KB              │
 └─────────────────────────────────────┘
 
-SMALL ZONE (1024 bytes per block)
+SMALL ZONE (129-8192 bytes per block)
 ┌─────────────────────────────────────┐
-│ t_page header                       │
+│ Zone metadata                       │
 ├─────────────────────────────────────┤
-│ t_block + 1024 bytes data          │
-│ t_block + 1024 bytes data          │
+│ Block + data (up to 8192 bytes)    │
+│ Block + data (up to 8192 bytes)    │
 │ ...                                │
+│ Total zone size: 1MB               │
+│ (Designed for 100 blocks of 1KB)   │
 └─────────────────────────────────────┘
 
-LARGE (direct mmap)
+LARGE (>8192 bytes, direct mmap)
 ┌─────────────────────────────────────┐
-│ t_block + N bytes data             │
+│ Block metadata + N bytes data      │
+│ Allocated directly with mmap       │
 └─────────────────────────────────────┘
 ```
-
----
 
 ## 📜 License
 

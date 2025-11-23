@@ -18,7 +18,7 @@
 /*      Filename: test.c                                                      */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:41:16 by espadara                              */
-/*      Updated: 2025/11/22 11:17:17 by espadara                              */
+/*      Updated: 2025/11/23 18:21:54 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 #include "krakenlib.h"
@@ -275,7 +275,7 @@ void test_original_demo(void)
     sea_printf("\n------------BONUS------------\n");
     char *poof = "cocococococcococo1231232132132131ZAAAAAAAAAWAAAAAAAAAAAAAAAAAAAAAARUUUUUUUUUUUUUUUDOOOOOOOOOOOOOOO";
     int len = sea_strlen(poof);
-    sea_memcpy(ptr[3], (void *)poof, len);
+    sea_memcpy_fast(ptr[3], (void *)poof, len);
     show_alloc_mem_ex(ptr[3]);
 
     for (int i = 0; i < 20; i++)
