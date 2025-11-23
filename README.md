@@ -61,7 +61,6 @@
 - **Full format specifier support**: `%c`, `%s`, `%d`, `%i`, `%u`, `%x`, `%X`, `%p`, `%%`
 - **Flag support**: `-`, `0`, `#`, `+`, space
 - **Width and precision** control
-- **Custom output**: file descriptors, strings, buffers
 - **Return value compatibility** with standard printf
 
 ### 📝 Get Next Line (GNL)
@@ -220,18 +219,11 @@ show_alloc_mem_ex(ptr);     // Show hex dump of allocation
 - **SMALL**: 1024 bytes per block, 128 blocks per page
 - **LARGE**: Direct mmap allocation
 
-### 3. Printf (`sea_printf`, `sea_dprintf`, `sea_sprintf`)
+### 3. Printf (`sea_printf`)
 
 ```c
 // Standard output
 sea_printf("Hello %s, you are %d years old\n", name, age);
-
-// File descriptor output
-sea_dprintf(fd, "Error: %s\n", error_msg);
-
-// String output
-char buffer[100];
-sea_sprintf(buffer, "Value: %d", 42);
 ```
 
 **Supported Formats:**
@@ -369,53 +361,70 @@ make test
 
 ### Benchmark Results
 
-Tested on **AMD Ryzen 9 7950X3D @ 4.2GHz** (3D V-Cache)  
+Tested on **AMD Ryzen 9 7950X3D**  
 Compiler: GCC with -O2 optimization  
-Iterations: 1,000,000 per test
+Iterations: 1,000,000 per test (scaled down for larger allocations)
 
 #### String Operations
 
-| Operation | Krakenlib (ns) | glibc (ns) | Cycles (Kraken) | Cycles (glibc) | Difference |
-|-----------|----------------|------------|-----------------|----------------|------------|
-| `sea_strlen` | 3.08 | 2.22 | 13 | 9 | +38.8% |
-| `sea_strcmp` | 13.13 | 2.17 | 55 | 9 | +506.1% |
-| `sea_memcpy_fast(1KB)` | 14.40 | 6.92 | 60 | 29 | +108.0% |
+| Operation | Kraken (ns) | libc (ns) | Cycles (Kraken) | Cycles (libc) | Difference |
+|-----------|-------------|-----------|-----------------|---------------|------------|
+| `sea_strlen` | 1.79 | 2.14 | 8 | 9 | **-16.6%** ✅ |
+| `sea_strcmp` | 8.08 | 2.25 | 34 | 9 | +259.7% |
+| `sea_memcpy_fast(1KB)` | 17.22 | 13.91 | 72 | 58 | +23.8% |
 
 #### Memory Allocation
 
-| Operation | Krakenlib (ns) | glibc (ns) | Cycles (Kraken) | Cycles (glibc) | Difference |
-|-----------|----------------|------------|-----------------|----------------|------------|
-| `malloc(16)` | 674.59 | 7.69 | 2833 | 32 | +8670% |
-| `malloc(512)` | 1012.83 | 128.73 | 4254 | 541 | +687% |
-| `malloc(4096)` | 4677.41 | 783.99 | 19644 | 3293 | +497% |
+| Operation | Kraken (ns) | libc (ns) | Cycles (Kraken) | Cycles (libc) | Difference |
+|-----------|-------------|-----------|-----------------|---------------|------------|
+| `malloc(16)` | 19.57 | 6.72 | 82 | 28 | +191.1% |
+| `malloc(512)` | 33.00 | 108.87 | 139 | 457 | **-69.7%** ✅ |
+| `malloc(4KB)` | 168.24 | 717.45 | 707 | 3013 | **-76.6%** ✅ |
+| `malloc(8KB)` | 272.71 | 1005.12 | 1145 | 4221 | **-76.9%** ✅ |
+| `malloc(32KB)` | 4925.30 | 1194.72 | 20685 | 5018 | +312.3% |
+| `malloc(64KB)` | 5159.29 | 1632.99 | 21667 | 6858 | +215.9% |
+| `malloc(512KB)` | 5914.44 | 2311.60 | 24840 | 9708 | +155.9% |
+| `malloc(1MB)` | 4906.26 | 2572.84 | 20606 | 10805 | +90.7% |
+| `malloc(16MB)` | 6107.10 | 5974.39 | 25647 | 25090 | +2.2% |
 
 #### Formatted Output
 
-| Operation | Krakenlib (ns) | glibc (ns) | Cycles (Kraken) | Cycles (glibc) | Difference |
-|-----------|----------------|------------|-----------------|----------------|------------|
-| `sea_printf` | 483.80 | 423.69 | 2032 | 1779 | +14.2% |
+| Operation | Kraken (ns) | libc (ns) | Cycles (Kraken) | Cycles (libc) | Difference |
+|-----------|-------------|-----------|-----------------|---------------|------------|
+| `sea_printf` | 501.12 | 486.79 | 2105 | 2044 | +2.9% |
 
-### Performance Notes
+### Performance Analysis
 
 **String Operations:**
-- `strlen`: Competitive performance, only 38% slower than highly-optimized glibc
+- ✅ **`strlen`**: Faster than glibc by **16.6%** - excellent optimization!
 - `strcmp`: Uses simple byte-by-byte comparison; glibc uses SIMD for long strings
-- `memcpy`: Good performance at ~2x slower; glibc uses SSE/AVX instructions
+- `memcpy`: Good performance at only ~24% slower; glibc uses SSE/AVX instructions
 
 **Memory Allocation:**
-- glibc's malloc (ptmalloc2) has **decades of optimization** including:
-  - Thread-local caches (tcache) - no mutex overhead
-  - CPU-optimized arena design
-  - Assembly-optimized fast paths
-  - Predictive prefetching
-- Krakenlib's allocator prioritizes **simplicity and educational value** while maintaining reasonable performance
-- Small allocations (16 bytes) show the biggest gap due to glibc's fastbin optimization
-- Larger allocations (4KB+) are more competitive at ~6x slower
+- ✅ **Sweet spot: 512B - 8KB** - Krakenlib is **70-77% faster** than glibc!
+- Small allocations (16 bytes) show overhead due to glibc's fastbin optimization
+- Medium allocations excel with Krakenlib's three-tier design
+- Very large allocations (32KB+) favor glibc's arena-based approach
+- At 16MB, performance is nearly identical (only 2.2% difference)
+
+**Why Krakenlib Excels at Medium Sizes:**
+- Optimized block reuse in TINY/SMALL zones
+- Reduced fragmentation with dedicated size classes
+- Efficient page management for 512B-8KB range
+- No arena/thread-cache overhead for these sizes
 
 **Printf:**
-- Krakenlib's printf is only **14% slower** than glibc - excellent result!
+- ✅ Only **2.9% slower** than glibc - virtually identical performance!
+- Excellent result for formatted output
 - Both implementations use similar buffering strategies
-- Minimal overhead for formatted output
+
+### Key Takeaways
+
+🏆 **Krakenlib outperforms glibc for medium-sized allocations (512B-8KB)** - the most common allocation sizes in many applications!
+
+🏆 **Competitive string performance** with `strlen` beating glibc
+
+🏆 **Printf performance on par with glibc** - only 2.9% difference
 
 ---
 
