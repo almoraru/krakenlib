@@ -34,7 +34,6 @@
 - [Testing](#-testing)
 - [Performance](#-performance)
 - [Documentation](#-documentation)
-- [Contributing](#-contributing)
 - [License](#-license)
 
 ---
