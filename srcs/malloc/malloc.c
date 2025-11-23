@@ -18,118 +18,184 @@
 /*      Filename: malloc.c                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:36:00 by espadara                              */
-/*      Updated: 2025/11/13 08:53:42 by espadara                              */
+/*      Updated: 2025/11/23 16:52:06 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sea_malloc.h"
 
-t_malloc_pages g_malloc_pages = {0, 0, 0};
+t_heap g_heap = {0};
+
 pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static inline void *block_create(t_block **free, t_block **alloc,
-                                 const size_t size)
+static inline int get_class_index(size_t size)
 {
-t_block *new_block;
-    t_block *next_free;
+  if (size == 0)
+    return (0);
+  // Size 1-16 -> index 0 | size 17-32 -> index 1 etc.
+  return ((size -1) / MIN_ALIGNMENT);
+}
 
-    if (!free || !alloc || !*free)
-      return NULL;
+static t_slab *init_new_slab(int type, int class_index, size_t block_size)
+{
+  t_slab *slab;
+  size_t zone_size;
+  size_t available_bytes;
+  t_slab **head;
 
-    new_block = *free;
-    next_free = new_block->next;
-
-    *free = next_free;
-    if (*free) {
-        // DEBUG: Check if next_free points to valid memory
-        if ((void *)*free < (void *)0x1000) {  // Likely invalid
-            write(2, "ERROR: Invalid free block pointer\n", 35);
-            return NULL;
-        }
-        (*free)->prev = NULL;
+  if (type == 0)// TINY
+    {
+      zone_size = TINY_ZONE_SIZE;
+      head = &g_heap.tiny[class_index];
     }
-    new_block->next = *alloc;
-    new_block->prev = NULL;
-    new_block->size = size;
+ else // SMALL
+   {
+     zone_size = SMALL_ZONE_SIZE;
+     head = &g_heap.small[class_index];
+   }
 
-    if (*alloc)
-      (*alloc)->prev = new_block;
-    *alloc = new_block;
+  slab = mmap(NULL, zone_size, PROT_READ | PROT_WRITE,
+              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (slab == MAP_FAILED)
+    return (NULL);
 
-    return ((void *)new_block + sizeof(t_block));
+  slab->block_size = block_size;
+  available_bytes = zone_size - sizeof(t_slab);
+  slab->total_blocks = available_bytes / block_size;
+
+  if (slab->total_blocks > 1024)
+    slab->total_blocks = 1024;
+
+  slab->free_count = slab->total_blocks;
+  slab->prev = NULL;
+
+  // Insert to the front of Global Heap
+  slab->next = *head;
+  if (*head)
+    (*head)->prev = slab;
+  *head = slab;
+
+  return (slab);
 }
 
-static inline void mem_init_zone(t_page **page,
-                                 t_page *mem, const size_t zone_size)
+static void *alloc_from_slab(t_slab *slab)
 {
-  t_block *free_block;
+  int i;
+  uint64_t inverted;
+  int bit_pos;
+  size_t global_pos;
 
-  free_block = (void *)mem + sizeof(t_page);
-  mem->prev = NULL;
-  if ((mem->next = *page))
-    mem->next->prev = mem;
-  *page = mem;
-  mem->alloc = NULL;
-  mem->free = free_block;
-  while ((void *)free_block + (zone_size + sizeof(t_block)) * 2 <
-         (void *)mem + zone_size * MALLOC_ZONE)
+  for (i = 0; i < 16; i++)
+    {
+      // UINT64_MAX -> ALL BITS ARE (1)
+      if (slab->bitmap[i] != UINT64_MAX)
+        {
+          // Invert to find first (0)
+          inverted = ~slab->bitmap[i];
+          // __builtin_ffsll: Built-in CPU instruction to find index of first set bit
+          bit_pos = __builtin_ffsll(inverted) - 1; // 0 - 63
+
+          // Mark bit as used (1)
+          slab->bitmap[i] |= (1ULL << bit_pos);
+          slab->free_count--;
+
+          //Adress = slab_start + header_size + (block_index * block_size)
+          global_pos =  (i * 64) + bit_pos;
+
+          /* [ SLAB HEADER ] [ BLOCK 0 ] [ BLOCK 1 ] [ BLOCK 2 ] [ BLOCK 3 ] ...
+          ** ^               ^           ^           ^
+          ** |               |           |           |
+          ** Start (slab)    |           |           Target (Block 2)
+          **                 |           |
+          **                 End of Header
+          */
+          return ((void *) ((char *)slab +
+                            sizeof(t_slab) + (global_pos * slab->block_size)));
+        }
+    }
+  return (NULL);
+}
+
+static void *allocate_tiny_small(size_t size, int type)
   {
-    free_block->next = (void *)free_block + sizeof(t_block) + zone_size;
-    free_block->next->prev = free_block;
-    free_block = free_block->next;
-  }
-  free_block->next = NULL;
+    int class_idx;
+    size_t aligned_size;
+    t_slab *slab;
+
+    class_idx = get_class_index(size);
+
+    // get true block size. Example: 17 -> aligned to 32
+    aligned_size = (class_idx + 1) * MIN_ALIGNMENT;
+
+    if (type == 0)
+      slab = g_heap.tiny[class_idx];
+    else
+      slab = g_heap.small[class_idx];
+
+    while (slab)
+      {
+        if (slab->free_count > 0)
+          return (alloc_from_slab(slab));
+        slab = slab->next;
+      }
+
+    // in case of not enough space -> create new zone
+    if (!(slab = init_new_slab(type, class_idx, aligned_size)))
+      {
+        sea_printf("Failed to allocate new zone\n");
+        return (NULL);
+      }
+
+    return (alloc_from_slab(slab));
 }
 
-static inline void *malloc_tiny_small(t_page **page,
-                                      const size_t zone_size, const size_t size)
+static void *allocate_large(size_t size)
 {
-  t_page *mem;
+  t_slab  *slab;
+  size_t  total_size;
 
-  mem = *page;
-  while (mem && !mem->free)
-    mem = mem->next;
-  if (!mem)
-  {
-    if ((mem = mmap(0, zone_size * MALLOC_ZONE, PROT_READ | PROT_WRITE,
-                    MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED)
-      return ((void *)error_malloc(2, "Could not allocate large malloc"));
-    mem_init_zone(page, mem, zone_size);
-  }
-  return (block_create(&mem->free, &mem->alloc, align_mem(size, 31)));
+  total_size = size + sizeof(t_slab);
+
+  total_size = (total_size + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
+
+    slab = mmap(NULL, total_size, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (slab == MAP_FAILED)
+      {
+        sea_printf("Failed to allocate large block");
+        return (NULL);
+      }
+
+    slab->block_size = size;
+    slab->total_blocks = 1;
+    slab->free_count = 0;
+
+    slab->next = g_heap.large;
+    slab->prev = NULL;
+    if (g_heap.large)
+      g_heap.large->prev = slab;
+    g_heap.large = slab;
+
+    // return the pointer right after header
+    return ((void *)(slab + 1));
 }
 
-static void *malloc_large(size_t size)
-{
-  const size_t msize = align_mem(size + sizeof(t_block), MASK_0XFFF);
-  t_block *block;
-
-  if (((block = mmap(0, msize, PROT_READ | PROT_WRITE,
-                     MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED))
-    return ((void *)error_malloc(2, "Could not allocate large malloc"));
-  block->size = align_mem(size, 31);
-  block->prev = NULL;
-  if ((block->next = g_malloc_pages.large))
-    g_malloc_pages.large->prev = block;
-  g_malloc_pages.large = block;
-  return ((void *)block + sizeof(t_block));
-}
-
-__attribute__((hot))
+__attribute__((visibility("default")))
 void *malloc(size_t size)
 {
-  const size_t type = (size > ZONE_TINY) + (size > ZONE_SMALL);
-  void *ptr = NULL;
+  void *ptr;
 
-  if (!size)
+  if (size == 0)
     return (NULL);
   pthread_mutex_lock(&g_malloc_mutex);
-  if (type == MALLOC_TINY)
-    ptr = malloc_tiny_small(&g_malloc_pages.tiny, ZONE_TINY, size);
-  else if (type == MALLOC_SMALL)
-    ptr = malloc_tiny_small(&g_malloc_pages.small, ZONE_SMALL, size);
+
+  if (size <= TINY_BLOCK_MAX)
+    ptr = allocate_tiny_small(size, 0); // 0 = TINY
+  else if (size <= SMALL_BLOCK_MAX)
+    ptr = allocate_tiny_small(size, 1); // 1 = SMALL
   else
-    ptr = malloc_large(size);
+    ptr = allocate_large(size); // LARGE
+
   pthread_mutex_unlock(&g_malloc_mutex);
   return (ptr);
 }

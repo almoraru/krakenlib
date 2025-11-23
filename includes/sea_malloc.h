@@ -18,12 +18,12 @@
 /*      Filename: malloc.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:35:26 by espadara                              */
-/*      Updated: 2025/11/13 08:49:01 by espadara                              */
+/*      Updated: 2025/11/23 16:53:13 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SEA_MALLOC_H
-#define SEA_MALLOC_H
+#ifndef MALLOC_H
+#define MALLOC_H
 
 /*
 ** ---------- INCLUDES ----------
@@ -39,93 +39,100 @@
 #include <stddef.h>
 #include <limits.h>
 #include <sys/mman.h>
+#include <stdint.h>
 #include <pthread.h>
-
-/*
-** ---------- BONUS GLOBAL ----------
-*/
-
-extern pthread_mutex_t  g_malloc_mutex;
 
 /*
 ** ---------- SIZE THESHOLDS ----------
 */
 
-#define ZONE_TINY       (1 << 6)
-#define ZONE_SMALL      (1 << 10)
-#define MALLOC_ZONE     (1 << 7)
-#define MASK_0XFFF      ((1 << 12) - 1)
-#define HEXA_LIMIT 0x10
-#define TRUE 1
-#define FALSE 0
+# define PAGE_SIZE       4096
+
+/* ** 1. TINY Definition
+** Range: 1 to 128 bytes (n = 128)
+** Zone Size: Must hold 100 blocks. 128 * 100 = 12800.
+** Aligned to Page: 16384 bytes (4 pages)
+*/
+
+# define TINY_BLOCK_MAX  128
+# define TINY_ZONE_SIZE  16384
+
+/* ** 2. SMALL Definition
+** Range: 129 to 1024 bytes (m = 1024)
+** Zone Size: Must hold 100 blocks. 1024 * 100 = 102400.
+** Aligned to Page: 106496 bytes (26 pages)
+*/
+
+# define SMALL_BLOCK_MAX 1024
+# define SMALL_ZONE_SIZE 106496
+
+/*
+** Alignment: Minimum block size (16 bytes for 128-bit SIMD safety) = ez memfastcpy
+*/
+
+# define MIN_ALIGNMENT   16
+
+/* ** Size Classes:
+** We don't just dump everything in a zone. We segregate by size.
+** Tiny: 16, 32, 48, ... 128 (8 classes)
+** Small: 144, 160, ... 1024 (Many classes)
+*/
+# define MAX_TINY_CLASSES (TINY_BLOCK_MAX / MIN_ALIGNMENT)
+# define MAX_SMALL_CLASSES (SMALL_BLOCK_MAX / MIN_ALIGNMENT)
 
 /*
 ** ---------- STRUCTS ----------
 */
 
-typedef enum
+/* ** The Bitmap:
+    ** 0 = Free, 1 = Used.
+    ** Tiny Zone (16KB) / Min Block (16B) = 1024 blocks max.
+    ** 1024 bits / 64 bits per int = 16 integers.
+*/
+
+//This structure sits at the VERY BEGINNING of every mmap'd zone (N or M bytes).
+typedef struct	s_slab
 {
-    MALLOC_TINY,
-    MALLOC_SMALL,
-    MALLOC_LARGE
-}                   t_malloc_type;
+    struct s_slab *next;
+    struct s_slab *prev;
+
+    size_t block_size;
+    size_t total_blocks;
+    size_t free_count;
+
+    uint64_t bitmap[16];
+}	t_slab;
 
 
-typedef struct      s_block
+/* ** t_heap: The Global Manager
+** Instead of one list, we have an array of lists.
+** request 30 bytes -> round to 32 -> go to index 1 -> O(1) lookup.
+** large is still a linked liste
+*/
+typedef struct s_heap
 {
-    struct s_block  *next;
-    struct s_block  *prev;
-    size_t          size;
-    size_t          align;
-}                   t_block;
-
-typedef struct      s_page
-{
-    struct s_page   *next;
-    struct s_page   *prev;
-    t_block         *alloc;
-    t_block         *free;
-}                   t_page;
-
-typedef struct      s_malloc_pages
-{
-    t_page          *tiny;
-    t_page          *small;
-    t_block         *large;
-}                   t_malloc_pages;
-
-extern  t_malloc_pages g_malloc_pages;
-
+    t_slab *tiny[MAX_TINY_CLASSES];
+    t_slab *small[MAX_SMALL_CLASSES];
+    t_slab *large;
+}	t_heap;
 
 /*
-** ---------- MAIN FUNCTIONS ----------
+** ---------- GLOBALS -------------
 */
-void                *malloc(size_t size);
-void                free(void *ptr);
-void                *realloc(void *ptr, size_t size);
-void                *calloc(size_t count, size_t size);
-void                *reallocf(void *ptr, size_t size);
+extern t_heap g_heap;
+extern pthread_mutex_t g_malloc_mutex;
 
 /*
-** ---------- UTIL FUNCTIONS ----------
+** ---------- PROTOTYPES ----------
 */
-size_t              align_mem(size_t size, size_t mask);
-bool                check_block(const void *ptr);
-void                putaddr(void *addr);
-size_t              page_size(size_t type);
+void	*malloc(size_t size);
+void	free(void *ptr);
+void	*realloc(void *ptr, size_t size);
+void	*calloc(size_t count, size_t size);
 
-/*
-** ---------- PRINT FUNTCIONS ----------
-*/
-void                show_alloc_mem();
-void                show_alloc_mem_ex(void *ptr);
-void                show_alloc_mem_minimap();
-void                ft_putsizebase(size_t nb, int size_base);
-
-/*
-** ---------- ERROR FUNCTIONS ----------
-*/
-bool                error_malloc(const int err, const char *str);
-
+/* Helper functions */
+void	show_alloc_mem(void);
+void	show_alloc_mem_ex(void *ptr);
+t_slab	*find_slab_by_ptr(void *ptr, int *type_out);
 
 #endif

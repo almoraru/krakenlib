@@ -1,90 +1,115 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                        ______                                              */
+/*                     .-"      "-.                                           */
+/*                    /            \                                          */
+/*        _          |              |          _                              */
+/*       ( \         |,  .-.  .-.  ,|         / )                             */
+/*        > "=._     | )(__/  \__)( |     _.=" <                              */
+/*       (_/"=._"=._ |/     /\     \| _.="_.="\_)                             */
+/*              "=._ (_     ^^     _)"_.="                                    */
+/*                  "=\__|IIIIII|__/="                                        */
+/*                 _.="| \IIIIII/ |"=._                                       */
+/*       _     _.="_.="\          /"=._"=._     _                             */
+/*      ( \_.="_.="     `--------`     "=._"=._/ )                            */
+/*       > _.="                            "=._ <                             */
+/*      (_/                                    \_)                            */
+/*                                                                            */
+/*      Filename: free.c                                                      */
+/*      By: espadara <espadara@pirate.capn.gg>                                */
+/*      Created: 2025/11/22 12:08:27 by espadara                              */
+/*      Updated: 2025/11/23 16:52:13 by espadara                              */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "sea_malloc.h"
 
-static void free_unused_mem(const int malloc_size, t_page *mem)
+static void free_slab_block(t_slab *slab, void *ptr, int type, int class_idx)
 {
-  size_t const zone_sizes[2] = {ZONE_TINY, ZONE_SMALL};
+  size_t      offset;
+  int         block_idx;
+  int         bitmap_idx;
+  int         bit_pos;
 
-  if (mem->prev)
-    mem->prev->next = mem->next;
-  else
-  {
-    if (malloc_size == MALLOC_TINY)
-      g_malloc_pages.tiny = mem->next;
-    else
-      g_malloc_pages.small = mem->next;
-  }
-  if (mem->next)
-    mem->next->prev = mem->prev;
-  munmap(mem, MALLOC_ZONE * zone_sizes[malloc_size]);
-}
+  offset = (char *)ptr - ((char *)slab + sizeof(t_slab));
+  block_idx = offset / slab->block_size;
 
-static inline void free_not_large(t_block *block,
-                                  const int malloc_size, t_page *mem)
-{
-  if (block->prev)
-    block->prev->next = block->next;
-  else
-    mem->alloc = block->next;
-  if (block->next)
-    block->next->prev = block->prev;
-  block->prev = NULL;
-  block->next = mem->free;
-  if (mem->free)
-    mem->free->prev = block;
-  mem->free = block;
-  if (!mem->alloc)
-    free_unused_mem(malloc_size, mem);
-}
+  // which int and which bit in that int?
+  bitmap_idx = block_idx / 64;
+  bit_pos = block_idx % 64;
 
-static inline void free_large(t_block *block)
-{
-  const size_t msize = align_mem(block->size + sizeof(t_block), MASK_0XFFF);
+  slab->bitmap[bitmap_idx] &= ~(1ULL << bit_pos);
+  slab->free_count++;
 
-  if (block->prev)
-    block->prev->next = block->next;
-  else
-    g_malloc_pages.large = block->next;
-  if (block->next)
-    block->next->prev = block->prev;
-  munmap(block, msize);
-}
-
-static void free_block(t_block *block)
-{
-  const int type = page_size(block->size);
-  size_t const zone_sizes[2] = {ZONE_TINY, ZONE_SMALL};
-  t_page *mem;
-
-  if (type == MALLOC_LARGE)
-    free_large(block);
-  else
-  {
-    mem = (type == MALLOC_TINY) ? g_malloc_pages.tiny : g_malloc_pages.small;
-
-    while (mem)
+  if (slab->free_count == slab->total_blocks)
     {
-      if ((void *)block >= (void *)mem &&
-          (void *)block < (void *)mem + MALLOC_ZONE * zone_sizes[type])
-        break;
-      mem = mem->next;
-    }
+      if (slab->prev)
+        slab->prev->next = slab->next;
+      else
+        {
+          if (type == 0) g_heap.tiny[class_idx] = slab->next;
+          else           g_heap.small[class_idx] = slab->next;
+        }
+      if (slab->next)
+        slab->next->prev = slab->prev;
 
-    if (!mem)
-    {
-      write(2, "ERROR: Attempting to free invalid block\n", 41);
-      return;
+      size_t zone_size = (type == 0) ? TINY_ZONE_SIZE : SMALL_ZONE_SIZE;
+      munmap(slab, zone_size);
     }
-
-    free_not_large(block, type, mem);
-  }
 }
 
-__attribute__((hot))
+static bool free_large(void *ptr)
+{
+  t_slab *slab = g_heap.large;
+  void *data_start;
+
+  while (slab)
+    {
+      data_start = (void *)(slab + 1);
+      if (ptr == data_start)
+        {
+          if (slab->prev)
+            slab->prev->next = slab->next;
+          else
+            g_heap.large = slab->next;
+          if (slab->next)
+            slab->next->prev = slab->prev;
+          size_t total_size = slab->block_size + sizeof(t_slab);
+          total_size = (total_size + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
+          munmap(slab, total_size);
+          return (true);
+        }
+      slab = slab->next;
+    }
+  return (false);
+}
+
+__attribute__((visibility("default")))
 void free(void *ptr)
 {
+  t_slab  *slab;
+  int     type = 0;
+  int     class_idx = 0;
+
+  if (!ptr)
+    return;
+
   pthread_mutex_lock(&g_malloc_mutex);
-  if (ptr && check_block(ptr))
-    free_block(ptr - sizeof(t_block));
+
+  slab = find_slab_by_ptr(ptr, &type);
+  if (slab)
+    {
+      // Reverse engineer the class index from block_size
+      // Size 32 -> (32 / 16) - 1 = Index 1
+      class_idx = (slab->block_size / MIN_ALIGNMENT) - 1;
+      free_slab_block(slab, ptr, type, class_idx);
+      pthread_mutex_unlock(&g_malloc_mutex);
+      return;
+    }
+  if (free_large(ptr))
+    {
+      pthread_mutex_unlock(&g_malloc_mutex);
+      return;
+    }
   pthread_mutex_unlock(&g_malloc_mutex);
 }
