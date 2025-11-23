@@ -18,7 +18,7 @@
 /*      Filename: malloc.c                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:36:00 by espadara                              */
-/*      Updated: 2025/11/23 16:52:06 by espadara                              */
+/*      Updated: 2025/11/23 17:51:05 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,9 +151,34 @@ static void *allocate_tiny_small(size_t size, int type)
 
 static void *allocate_large(size_t size)
 {
-  t_slab  *slab;
-  size_t  total_size;
+  t_slab	*slab;
+  t_slab	*cache;
+  size_t	total_size;
 
+  cache = g_heap.cache_large;
+  while (cache)
+    {
+      if (cache->block_size >= size)
+        {
+          // Found a suitable cached block! Unlink it from cache
+          if (cache->prev)
+            cache->prev->next = cache->next;
+          else
+            g_heap.cache_large = cache->next;
+          if (cache->next)
+            cache->next->prev = cache->prev;
+          g_heap.cache_count--;
+          // Add to active large list
+          cache->next = g_heap.large;
+          cache->prev = NULL;
+          if (g_heap.large)
+            g_heap.large->prev = cache;
+          g_heap.large = cache;
+          return ((void *)(cache + 1));
+        }
+      cache = cache->next;
+    }
+  
   total_size = size + sizeof(t_slab);
 
   total_size = (total_size + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);

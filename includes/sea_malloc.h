@@ -18,7 +18,7 @@
 /*      Filename: malloc.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 22:35:26 by espadara                              */
-/*      Updated: 2025/11/23 17:39:10 by espadara                              */
+/*      Updated: 2025/11/23 17:48:52 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,6 +80,8 @@
 # define MAX_TINY_CLASSES (TINY_BLOCK_MAX / MIN_ALIGNMENT)
 # define MAX_SMALL_CLASSES (SMALL_BLOCK_MAX / MIN_ALIGNMENT)
 
+# define CACHE_SIZE 4
+
 /*
 ** ---------- STRUCTS ----------
 */
@@ -114,6 +116,8 @@ typedef struct s_heap
     t_slab *tiny[MAX_TINY_CLASSES];
     t_slab *small[MAX_SMALL_CLASSES];
     t_slab *large;
+    t_slab *cache_large;
+    size_t cache_count;
 }	t_heap;
 
 /*
