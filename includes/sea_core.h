@@ -18,7 +18,7 @@
 /*      Filename: sealib.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/08/23 15:35:18 by espadara                              */
-/*      Updated: 2025/11/24 15:36:13 by espadara                              */
+/*      Updated: 2025/11/24 16:01:35 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,6 @@ char	*sea_strchr(const char *s, int c);
 char	*sea_strrchr(const char *s, int c);
 char	*sea_strstr(const char *haystack, const char *needle);
 int	sea_strcmp(const char *s1, const char *s2);
-int	sea_strncmp(const char *s1, const char *s2, size_t n);
 int	sea_strncmp(const char *s1, const char *s2, size_t n);
 char	*sea_strnstr(const char *haystack, const char *needle, size_t len);
 char	*sea_strdup(const char *s);
