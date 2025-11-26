@@ -18,7 +18,7 @@
 /*      Filename: sea_putstr_fd.c                                             */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/09/01 22:58:50 by espadara                              */
-/*      Updated: 2025/09/01 22:59:28 by espadara                              */
+/*      Updated: 2025/11/26 14:11:32 by almoraru                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,5 +26,8 @@
 
 void	sea_putstr_fd(char const *s, int fd)
 {
-  write(fd, s, sea_strlen(s));
+  ssize_t ret = write(fd, s, sea_strlen(s));
+
+  if (ret < 0)
+    return ;
 }

@@ -18,7 +18,7 @@
 /*      Filename: sea_putchar_fd.c                                            */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/09/01 22:57:36 by espadara                              */
-/*      Updated: 2025/09/01 22:58:04 by espadara                              */
+/*      Updated: 2025/11/26 14:10:48 by almoraru                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,5 +26,8 @@
 
 void	sea_putchar_fd(char c, int fd)
 {
-  write(fd, &c, 1);
+  ssize_t ret = write(fd, &c, 1);
+
+  if (ret < 0)
+    return ;
 }

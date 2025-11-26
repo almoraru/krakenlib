@@ -18,7 +18,7 @@
 /*      Filename: sea_printf_buffer.c                                         */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/11 16:12:24 by espadara                              */
-/*      Updated: 2025/11/11 16:30:15 by espadara                              */
+/*      Updated: 2025/11/26 14:12:15 by almoraru                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,11 +31,14 @@ void sea_state_init(t_sea_state *state)
 
 void sea_state_flush(t_sea_state *state)
 {
+  ssize_t ret = 0;
+  
   if (state->buf_pos > 0)
     {
-      write(1, state->buffer, state->buf_pos);
+      ret = write(1, state->buffer, state->buf_pos);
       state->buf_pos = 0;
     }
+  (void)ret;
 }
 
 void sea_putchar_buf(t_sea_state *state, char c)
