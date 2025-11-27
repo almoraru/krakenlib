@@ -18,7 +18,7 @@
 /*      Filename: sealib.h                                                    */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/08/23 15:35:18 by espadara                              */
-/*      Updated: 2025/11/24 16:01:35 by espadara                              */
+/*      Updated: 2025/11/27 22:07:47 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,6 +100,7 @@ char	**sea_arena_split(t_mem *arena, char const *s, char c);
 char	*sea_itoa(int n);
 char	*sea_strmapi(char const *s, char (*f)(unsigned int, char));
 void	sea_striteri(char *s, void (*f)(unsigned int, char *));
+char	*sea_strtok(char *str, const char *delim);
 
 /* MEMORY */
 void	*sea_memset(void *s, int c, size_t n);
