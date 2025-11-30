@@ -18,7 +18,7 @@
 /*      Filename: sea_printf.h                                                */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/02 14:16:42 by espadara                              */
-/*      Updated: 2025/11/11 16:26:40 by espadara                              */
+/*      Updated: 2025/11/30 13:10:32 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@
 # include <unistd.h>
 # include <stdlib.h>
 # include <math.h>
+# include <stdint.h>
 /* SEA LIB */
 # include "sea_core.h"
 
@@ -44,12 +45,24 @@
 # define FLAG_HAS_PRECISION 32	// (1 << 5)
 # define PAGE               4096
 
+/* LENGTH MODIFIERS */
+typedef enum e_length {
+    LEN_NONE,
+    LEN_HH,
+    LEN_H,
+    LEN_L,
+    LEN_LL,
+    LEN_Z,
+    LEN_J
+} t_length;
+
 /* STRUCTURES */
 typedef struct s_flags
 {
 	int	bits;
 	int	width;
 	int	precision;
+	t_length    len_mod;
 }	t_flags;
 
 typedef struct s_sea_state
@@ -65,10 +78,12 @@ typedef struct s_sea_state
 
 /* PROTOTYPES  */
 
+typedef void (*t_handler)(t_sea_state *);
 /* --- Main Functions --- */
 
 int	sea_printf(const char *format, ...);
 void	sea_parse_conversion(const char **format, t_sea_state *state);
+void    sea_parse_length(const char **format, t_sea_state *state);
 
 /* --- Flag & Bonus Parsers (sea_printf_bonus.c) --- */
 
@@ -87,6 +102,8 @@ void	sea_handle_unsigned(t_sea_state *state);
 void	sea_handle_hex(t_sea_state *state, int is_upper);
 void	sea_handle_percent(t_sea_state *state);
 void	sea_handle_float(t_sea_state *state);
+void    sea_handle_hex_lower(t_sea_state *state);
+void    sea_handle_hex_upper(t_sea_state *state);
 
 /* --- Buffer Functions (sea_printf_buffer.c) --- */
 
@@ -98,5 +115,4 @@ char    *sea_itoa_buf(t_sea_state *state, long long n);
 char    *sea_utoa_base_buf(t_sea_state *state, unsigned long long n,
             char *base_chars);
 char	*sea_ftoa_buf(t_sea_state *state, double d, int *out_len);
-
 #endif

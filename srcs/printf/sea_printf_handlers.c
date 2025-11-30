@@ -18,7 +18,7 @@
 /*      Filename: sea_printf_handlers.c                                       */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/02 15:13:25 by espadara                              */
-/*      Updated: 2025/11/11 17:01:20 by espadara                              */
+/*      Updated: 2025/11/30 13:11:29 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 #include "sea_printf.h"
@@ -95,7 +95,23 @@ void	sea_handle_int(t_sea_state *state)
 	char		prefix[2];
 	int			is_zero_padded;
 
-	n = va_arg(state->args, int);
+
+    if (state->flags.len_mod == LEN_LL)
+        n = va_arg(state->args, long long);
+    else if (state->flags.len_mod == LEN_L)
+        n = va_arg(state->args, long);
+    else if (state->flags.len_mod == LEN_Z)
+        n = va_arg(state->args, ssize_t);
+    else if (state->flags.len_mod == LEN_J)
+        n = va_arg(state->args, intmax_t);
+    else if (state->flags.len_mod == LEN_H)
+        n = (short)va_arg(state->args, int);
+    else if (state->flags.len_mod == LEN_HH)
+        n = (char)va_arg(state->args, int);
+    else{
+        n = va_arg(state->args, int);
+    }
+
 	is_neg = (n < 0);
 	s = sea_itoa_buf(state, n);
 	len = sea_strlen(s);
@@ -143,12 +159,19 @@ void	sea_handle_int(t_sea_state *state)
 
 void	sea_handle_unsigned(t_sea_state *state)
 {
-	unsigned int	n;
+	unsigned long long	n;
 	char			*s;
 	int				len;
 	int				is_zero_padded;
 
-	n = va_arg(state->args, unsigned int);
+    if (state->flags.len_mod == LEN_LL) n = va_arg(state->args, unsigned long long);
+    else if (state->flags.len_mod == LEN_L) n = va_arg(state->args, unsigned long);
+    else if (state->flags.len_mod == LEN_Z) n = va_arg(state->args, size_t);
+    else if (state->flags.len_mod == LEN_J) n = va_arg(state->args, uintmax_t);
+    else if (state->flags.len_mod == LEN_H) n = (unsigned short)va_arg(state->args, unsigned int);
+    else if (state->flags.len_mod == LEN_HH) n = (unsigned char)va_arg(state->args, unsigned int);
+    else n = va_arg(state->args, unsigned int);
+
 	s = sea_utoa_base_buf(state, n, "0123456789");
 	len = sea_strlen(s);
 	if (n == 0 && (state->flags.bits & FLAG_HAS_PRECISION)
@@ -167,16 +190,26 @@ void	sea_handle_unsigned(t_sea_state *state)
 		sea_handle_width(state, len, 0);
 }
 
+void sea_handle_hex_lower(t_sea_state *state) { sea_handle_hex(state, 0); }
+void sea_handle_hex_upper(t_sea_state *state) { sea_handle_hex(state, 1); }
+
 void	sea_handle_hex(t_sea_state *state, int is_upper)
 {
-	unsigned int	n;
+	unsigned long long	n;
 	char			*s;
 	char			*base;
 	int				len;
 	int				prefix_len;
 	int				is_zero_padded;
 
-	n = va_arg(state->args, unsigned int);
+    if (state->flags.len_mod == LEN_LL) n = va_arg(state->args, unsigned long long);
+    else if (state->flags.len_mod == LEN_L) n = va_arg(state->args, unsigned long);
+    else if (state->flags.len_mod == LEN_Z) n = va_arg(state->args, size_t);
+    else if (state->flags.len_mod == LEN_J) n = va_arg(state->args, uintmax_t);
+    else if (state->flags.len_mod == LEN_H) n = (unsigned short)va_arg(state->args, unsigned int);
+    else if (state->flags.len_mod == LEN_HH) n = (unsigned char)va_arg(state->args, unsigned int);
+    else n = va_arg(state->args, unsigned int);
+
 	if (is_upper)
 		base = "0123456789ABCDEF";
 	else

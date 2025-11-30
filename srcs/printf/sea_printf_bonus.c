@@ -18,7 +18,7 @@
 /*      Filename: sea_printf_bonus.c                                          */
 /*      By: espadara <espadara@pirate.capn.gg>                                */
 /*      Created: 2025/11/02 15:27:49 by espadara                              */
-/*      Updated: 2025/11/11 16:46:13 by espadara                              */
+/*      Updated: 2025/11/30 12:54:29 by espadara                              */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,4 +127,40 @@ void sea_handle_precision(t_sea_state *state, char **str, int *len, int is_neg)
 
     *str = state->conversion;
     *len = new_len;
+}
+
+void sea_parse_length(const char **format, t_sea_state *state)
+{
+  if (**format == 'l')
+    {
+      (*format)++;
+      if (**format == 'l')
+        {
+          state->flags.len_mod = LEN_LL;
+          (*format)++;
+        }
+      else
+        state->flags.len_mod = LEN_L;
+    }
+  else if (**format == 'h')
+    {
+      (*format)++;
+      if (**format == 'h')
+        {
+          state->flags.len_mod = LEN_HH;
+          (*format)++;
+        }
+      else
+        state->flags.len_mod = LEN_H;
+    }
+  else if (**format == 'z')
+    {
+      state->flags.len_mod = LEN_Z;
+      (*format)++;
+    }
+  else if (**format == 'j')
+    {
+      state->flags.len_mod = LEN_J;
+      (*format)++;
+    }
 }
